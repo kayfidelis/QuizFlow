@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizFlow — Editor</title>
+  <link rel="stylesheet" href="global.css">
+  <style>
+    /* ── Editor layout 3 colunas ── */
+    .editor-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr 340px;
+      height: calc(100vh - var(--topbar-h));
+      overflow: hidden;
+    }
+
+    /* ── Painel esquerdo: Etapas ── */
+    .steps-panel {
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .steps-panel-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .steps-panel-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .steps-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .step-thumb {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition);
+      border: 2px solid transparent;
+      background: var(--bg-elevated);
+      position: relative;
+    }
+
+    .step-thumb:hover { background: var(--bg-hover); }
+    .step-thumb.active {
+      border-color: var(--amber);
+      background: var(--amber-glow);
+    }
+
+    .step-num {
+      width: 24px; height: 24px;
+      background: var(--bg-hover);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .step-thumb.active .step-num {
+      background: var(--amber);
+      color: #07080F;
+    }
+
+    .step-thumb-info { flex: 1; min-width: 0; }
+    .step-thumb-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .step-thumb-tipo {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .step-delete-btn {
+      opacity: 0;
+      background: transparent;
+      border: none;
+      color: var(--red);
+      cursor: pointer;
+      padding: 2px;
+      transition: opacity var(--transition);
+      font-size: 0.8rem;
+    }
+    .step-thumb:hover .step-delete-btn { opacity: 1; }
+
+    .final-step-thumb {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      background: rgba(46,204,135,0.08);
+      border: 2px solid rgba(46,204,135,0.15);
+      cursor: pointer;
+      margin-top: 6px;
+      transition: all var(--transition);
+    }
+    .final-step-thumb.active { border-color: var(--green); }
+
+    /* ── Centro: Editor / Preview / Código ── */
+    .editor-center {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-base);
+    }
+
+    .editor-tabs {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 2px;
+      padding: 0 20px;
+    }
+
+    .editor-tab-btn {
+      padding: 14px 18px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+      margin-bottom: -1px;
+    }
+
+    .editor-tab-btn:hover { color: var(--text-primary); }
+    .editor-tab-btn.active {
+      color: var(--amber);
+      border-bottom-color: var(--amber);
+    }
+
+    .editor-tab-content { display: none; flex: 1; overflow: auto; }
+    .editor-tab-content.active { display: flex; flex-direction: column; }
+
+    /* Preview */
+    .preview-wrap {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 24px;
+      overflow-y: auto;
+    }
+
+    .preview-frame {
+      width: 100%;
+      max-width: 560px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+      overflow: hidden;
+      min-height: 300px;
+    }
+
+    .preview-toolbar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .device-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+    }
+
+    .device-btn {
+      padding: 5px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .device-btn.active { background: var(--bg-surface); color: var(--text-primary); }
+
+    /* Code tab */
+    .code-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      gap: 16px;
+    }
+
+    .code-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .code-block-editor {
+      flex: 1;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      position: relative;
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 400px;
+      background: transparent;
+      border: none;
+      color: var(--amber);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      padding: 20px;
+      resize: none;
+      outline: none;
+      tab-size: 2;
+    }
+
+    /* ── Painel direito: Propriedades ── */
+    .props-panel {
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .props-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .props-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .props-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .props-section { margin-bottom: 24px; }
+    .props-section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .props-field { margin-bottom: 12px; }
+    .props-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    /* Perguntas na etapa */
+    .question-block {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .question-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .question-type-badge {
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      background: var(--bg-hover);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .option-row:last-child { border-bottom: none; }
+
+    .option-icon-input {
+      width: 32px;
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-primary);
+      text-align: center;
+      font-size: 0.9rem;
+      padding: 3px;
+      outline: none;
+    }
+
+    .option-text-input {
+      flex: 1;
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 0.78rem;
+      padding: 4px 8px;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+    .option-text-input:focus { border-color: var(--amber); }
+
+    .option-del-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      font-size: 0.8rem;
+      transition: color var(--transition);
+    }
+    .option-del-btn:hover { color: var(--red); }
+
+    /* Colors */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .color-field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .color-input {
+      width: 32px; height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 2px;
+      background: var(--bg-elevated);
+    }
+
+    .color-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Unsaved indicator */
+    .unsaved-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--amber);
+      display: none;
+      animation: pulse 1.5s infinite;
+    }
+    .unsaved-dot.visible { display: inline-block; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Pixel fields */
+    .pixel-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .pixel-label {
+      font-size: 0.72rem;
+      width: 80px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 1100px) {
+      .editor-layout { grid-template-columns: 220px 1fr; }
+      .props-panel { display: none; }
+    }
+    @media (max-width: 768px) {
+      .editor-layout { grid-template-columns: 1fr; }
+      .steps-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout" style="flex-direction:column;">
+
+  <!-- Topbar do editor -->
+  <header class="page-header" style="position:sticky;top:0;z-index:100;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="quizzes.html" class="btn btn-ghost btn-sm">
+        ← Voltar
+      </a>
+      <div style="width:1px;height:20px;background:var(--border);"></div>
+      <input type="text" id="quiz-name-input" class="form-input" value="Carregando..."
+        style="width:280px;padding:7px 12px;font-size:0.875rem;font-weight:600;background:transparent;border-color:transparent;"
+        onchange="markDirty()" title="Clique para renomear">
+      <div class="unsaved-dot" id="unsaved-dot" title="Alterações não salvas"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="status-badge" class="badge badge-muted">Rascunho</span>
+      <button class="btn btn-secondary btn-sm" id="btn-save" onclick="saveQuiz()">
+        Salvar
+      </button>
+      <button class="btn btn-primary btn-sm" id="btn-publish" onclick="publishQuiz()">
+        Publicar
+      </button>
+    </div>
+  </header>
+
+  <!-- Editor main -->
+  <div class="editor-layout" style="flex:1;">
+
+    <!-- Painel esquerdo: etapas -->
+    <div class="steps-panel">
+      <div class="steps-panel-header">
+        <span class="steps-panel-title">Etapas</span>
+        <button class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:0.75rem;" onclick="addStep()">
+          + Add
+        </button>
+      </div>
+
+      <div class="steps-list" id="steps-list">
+        <div style="padding:24px;text-align:center;">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Centro: editor tabs -->
+    <div class="editor-center">
+      <!-- Tabs -->
+      <div class="editor-tabs">
+        <button class="editor-tab-btn active" onclick="switchEditorTab('preview', this)">👁 Preview</button>
+        <button class="editor-tab-btn" onclick="switchEditorTab('edit', this)">✏️ Editar</button>
+        <button class="editor-tab-btn" id="tab-code-btn" onclick="switchEditorTab('code', this)">📋 Código</button>
+      </div>
+
+      <!-- Preview tab -->
+      <div class="editor-tab-content active" id="tab-preview">
+        <div class="preview-toolbar">
+          <div class="device-toggle">
+            <button class="device-btn active" onclick="setDevice('desktop', this)">🖥 Desktop</button>
+            <button class="device-btn" onclick="setDevice('mobile', this)">📱 Mobile</button>
+          </div>
+          <span style="font-size:0.75rem;color:var(--text-muted);">Preview em tempo real</span>
+        </div>
+        <div class="preview-wrap">
+          <div class="preview-frame" id="preview-frame">
+            <div id="preview-content" style="padding:20px;">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit tab -->
+      <div class="editor-tab-content" id="tab-edit">
+        <div style="flex:1;overflow-y:auto;padding:24px;" id="edit-area">
+          <p style="color:var(--text-muted);text-align:center;margin-top:40px;">Selecione uma etapa para editar</p>
+        </div>
+      </div>
+
+      <!-- Code tab -->
+      <div class="editor-tab-content" id="tab-code">
+        <div class="code-wrap">
+          <div class="code-actions">
+            <button class="btn btn-primary btn-sm" onclick="generateCode()">
+              ⚡ Gerar Código
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-copy-code" onclick="copyCode()" disabled>
+              📋 Copiar
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-download-code" onclick="downloadCode()" disabled>
+              ⬇ Baixar HTML
+            </button>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text-muted);cursor:pointer;">
+              <input type="checkbox" id="minify-check"> Minificar
+            </label>
+          </div>
+          <div class="code-block-editor">
+            <textarea class="code-textarea" id="generated-code-textarea" readonly placeholder="Clique em 'Gerar Código' para gerar o HTML incorporável do quiz..."></textarea>
+          </div>
+          <p style="font-size:0.75rem;color:var(--text-muted);">
+            💡 Cole este código no widget HTML do Elementor ou qualquer página que suporte HTML customizado.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel direito: propriedades -->
+    <div class="props-panel">
+      <div class="props-header">
+        <span class="props-title" id="props-panel-title">Propriedades</span>
+        <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;" onclick="saveQuiz()">Salvar</button>
+      </div>
+      <div class="props-body" id="props-body">
+        <p style="color:var(--text-muted);font-size:0.8rem;text-align:center;margin-top:40px;">Selecione uma etapa</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add Question modal -->
+<div class="modal-overlay" id="modal-add-question" style="display:none;" onclick="if(event.target===this)closeAddQuestion()">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-title">+ Adicionar Pergunta</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px;">
+      <button class="template-card" onclick="addQuestion('multipla_escolha')">
+        <div class="t-icon">☑️</div>
+        <div class="t-name">Múltipla Escolha</div>
+        <div class="t-desc">Auto-avança ao clicar</div>
+      </button>
+      <button class="template-card" onclick="addQuestion('selecao_unica')">
+        <div class="t-icon">🔘</div>
+        <div class="t-name">Seleção Única</div>
+        <div class="t-desc">Com botão Continuar</div>
+      </button>
+      <button class="template-card" onclick="addQuestion('selecao_multipla')">
+        <div class="t-icon">✅</div>
+        <div class="t-name">Múltipla Seleção</div>
+        <div class="t-desc">Seleciona várias</div>
+      </button>
+      <button class="template-card" onclick="addQuestion('texto')">
+        <div class="t-icon">📝</div>
+        <div class="t-name">Texto Livre</div>
+        <div class="t-desc">Campo aberto</div>
+      </button>
+      <button class="template-card" onclick="addQuestion('captura_nome')">
+        <div class="t-icon">👤</div>
+        <div class="t-name">Captura — Nome</div>
+        <div class="t-desc">Campo de nome</div>
+      </button>
+      <button class="template-card" onclick="addQuestion('captura_email')">
+        <div class="t-icon">✉️</div>
+        <div class="t-name">Captura — Email</div>
+        <div class="t-desc">Campo de email</div>
+      </button>
+      <button class="template-card" onclick="addQuestion('captura_whatsapp')">
+        <div class="t-icon">📱</div>
+        <div class="t-name">Captura — WhatsApp</div>
+        <div class="t-desc">Campo de telefone</div>
+      </button>
+      <button class="template-card" onclick="addQuestion('numero')">
+        <div class="t-icon">🔢</div>
+        <div class="t-name">Número</div>
+        <div class="t-desc">Campo numérico</div>
+      </button>
+    </div>
+    <button class="btn btn-secondary" style="width:100%;" onclick="closeAddQuestion()">Cancelar</button>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="utils.js"></script>
+<script>
+if (!Auth.requireAuth()) throw '';
+
+const urlParams = new URLSearchParams(location.search);
+const QUIZ_ID = urlParams.get('id');
+if (!QUIZ_ID) { window.location.href = 'quizzes.html'; throw ''; }
+
+// ── Estado Global ──
+let quiz = null;
+let etapas = [];
+let activeStepIndex = 0;
+let isDirty = false;
+
+// ── Load Quiz ──
+async function loadQuiz() {
+  try {
+    const res = await API.getQuiz(QUIZ_ID);
+    if (!res?.success) { Toast.error('Quiz não encontrado'); window.location.href = 'quizzes.html'; return; }
+    quiz = res.data;
+    etapas = quiz.etapas || [];
+    renderAll();
+
+    // Abre aba de código se veio por parâmetro
+    if (urlParams.get('tab') === 'code') {
+      document.querySelector('[onclick*="code"]').click();
+    }
+  } catch(e) {
+    Toast.error('Erro ao carregar: ' + e.message);
+  }
+}
+
+function renderAll() {
+  document.getElementById('quiz-name-input').value = quiz.nome;
+  document.getElementById('status-badge').textContent = quiz.status === 'published' ? 'Publicado' : 'Rascunho';
+  document.getElementById('status-badge').className = 'badge ' + (quiz.status === 'published' ? 'badge-success' : 'badge-muted');
+
+  renderStepsList();
+  if (etapas.length > 0) selectStep(0);
+  renderConfigProps();
+}
+
+function renderStepsList() {
+  const list = document.getElementById('steps-list');
+  list.innerHTML = etapas.map((e, i) => `
+    <div class="step-thumb ${i === activeStepIndex ? 'active' : ''}" onclick="selectStep(${i})">
+      <div class="step-num">${i + 1}</div>
+      <div class="step-thumb-info">
+        <div class="step-thumb-title">${e.titulo || 'Etapa ' + (i+1)}</div>
+        <div class="step-thumb-tipo">${stepTipoLabel(e.tipo)}</div>
+      </div>
+      <button class="step-delete-btn" onclick="deleteStep(event, ${i})">✕</button>
+    </div>
+  `).join('') + `
+    <div class="final-step-thumb ${activeStepIndex === etapas.length ? 'active' : ''}" onclick="selectFinalStep()">
+      <div class="step-num" style="background:rgba(46,204,135,0.2);color:var(--green);">✓</div>
+      <div class="step-thumb-info">
+        <div class="step-thumb-title" style="color:var(--green);">Página Final</div>
+        <div class="step-thumb-tipo">Obrigado + Redirect</div>
+      </div>
+    </div>
+  `;
+}
+
+function stepTipoLabel(tipo) {
+  const map = {
+    pergunta: '❓ Pergunta',
+    captura: '📧 Captura',
+    informativo: 'ℹ️ Informativo'
+  };
+  return map[tipo] || tipo;
+}
+
+function selectStep(i) {
+  activeStepIndex = i;
+  renderStepsList();
+  renderStepEdit(etapas[i]);
+  renderStepProps(etapas[i], i);
+  renderPreview();
+}
+
+function selectFinalStep() {
+  activeStepIndex = etapas.length;
+  renderStepsList();
+  renderFinalStepEdit();
+  renderFinalStepProps();
+}
+
+// ── Preview ──
+function renderPreview() {
+  const container = document.getElementById('preview-content');
+  if (!quiz) return;
+
+  const step = etapas[activeStepIndex] || (activeStepIndex === etapas.length ? '__final' : null);
+  if (!step) return;
+
+  const config = quiz.config || {};
+  const cores = config.cores || {};
+  const primary = cores.primaria || '#6366F1';
+  const bgColor = cores.fundo || '#FFFFFF';
+  const textColor = cores.texto || '#1F2937';
+
+  if (step === '__final') {
+    const pf = config.pagina_final || {};
+    container.innerHTML = `
+      <div style="text-align:center;padding:48px 28px;font-family:sans-serif;background:${bgColor};color:${textColor};">
+        <div style="font-size:3.5rem;margin-bottom:16px;">🎉</div>
+        <div style="font-size:1.5rem;font-weight:700;margin-bottom:10px;">${pf.titulo || 'Obrigado!'}</div>
+        <div style="font-size:0.9rem;opacity:0.65;margin-bottom:24px;">${pf.subtitulo || 'Suas respostas foram registradas.'}</div>
+        ${pf.botao_url ? `<button style="padding:12px 28px;background:${primary};color:white;border:none;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;">${pf.botao_texto || 'Continuar'}</button>` : ''}
+      </div>`;
+    return;
+  }
+
+  const perguntas = step.perguntas || [];
+  let html = `<div style="padding:32px 24px;background:${bgColor};font-family:sans-serif;color:${textColor};">`;
+  if (step.titulo) html += `<div style="font-size:1.2rem;font-weight:700;margin-bottom:8px;">${step.titulo}</div>`;
+  if (step.descricao) html += `<div style="font-size:0.875rem;opacity:0.65;margin-bottom:20px;">${step.descricao}</div>`;
+
+  perguntas.forEach(p => {
+    if (['multipla_escolha','selecao_unica','botao','selecao_multipla'].includes(p.tipo)) {
+      html += `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">`;
+      (p.opcoes || []).forEach(op => {
+        html += `<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border:2px solid rgba(0,0,0,0.1);border-radius:10px;font-size:0.875rem;font-weight:500;cursor:pointer;">
+          ${op.icone ? `<span style="font-size:1.2rem;">${op.icone}</span>` : ''}
+          <span>${op.texto || ''}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    } else if (p.tipo.startsWith('captura_') || p.tipo === 'texto' || p.tipo === 'numero') {
+      const label = p.texto || 'Campo';
+      const placeholder = p.placeholder || '';
+      html += `<div style="margin-bottom:14px;">
+        <div style="font-size:0.78rem;font-weight:600;margin-bottom:6px;opacity:0.7;">${label}</div>
+        <input type="text" placeholder="${placeholder}" disabled style="width:100%;padding:11px 14px;border:2px solid rgba(0,0,0,0.1);border-radius:10px;font-size:0.875rem;background:transparent;color:${textColor};">
+      </div>`;
+    }
+  });
+
+  if (step.tipo !== 'captura' || perguntas.every(p => !p.tipo.startsWith('captura_'))) {
+    html += `<button style="width:100%;padding:13px;background:${primary};color:white;border:none;border-radius:10px;font-size:0.9rem;font-weight:600;margin-top:8px;cursor:pointer;">Continuar</button>`;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function setDevice(device, btn) {
+  document.querySelectorAll('.device-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const frame = document.getElementById('preview-frame');
+  if (device === 'mobile') {
+    frame.style.maxWidth = '390px';
+  } else {
+    frame.style.maxWidth = '560px';
+  }
+}
+
+// ── Edit Panel (centro) ──
+function renderStepEdit(step) {
+  const area = document.getElementById('edit-area');
+  area.innerHTML = `
+    <div style="margin-bottom:20px;">
+      <label class="form-label">Título da Etapa</label>
+      <input class="form-input" value="${step.titulo || ''}" oninput="step_set(this,'titulo')" placeholder="Ex: Qual é o seu objetivo?">
+    </div>
+    <div style="margin-bottom:20px;">
+      <label class="form-label">Subtítulo / Descrição</label>
+      <textarea class="form-input" rows="2" oninput="step_set(this,'descricao')" placeholder="Opcional...">${step.descricao || ''}</textarea>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="form-label" style="margin:0;">Perguntas</div>
+      <button class="btn btn-sm btn-secondary" onclick="openAddQuestion()">+ Adicionar</button>
+    </div>
+
+    <div id="questions-list">
+      ${renderQuestionsHTML(step)}
+    </div>
+  `;
+}
+
+function renderQuestionsHTML(step) {
+  const perguntas = step.perguntas || [];
+  if (!perguntas.length) {
+    return `<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:0.875rem;background:var(--bg-elevated);border-radius:var(--radius-md);">
+      Nenhuma pergunta. Clique em "+ Adicionar"
+    </div>`;
+  }
+
+  return perguntas.map((p, pi) => `
+    <div class="question-block">
+      <div class="question-block-header">
+        <span class="question-type-badge">${p.tipo}</span>
+        <div style="display:flex;gap:4px;">
+          ${pi > 0 ? `<button class="btn btn-ghost btn-sm" style="padding:2px 6px;" onclick="moveQuestion(${pi}, -1)">↑</button>` : ''}
+          ${pi < perguntas.length - 1 ? `<button class="btn btn-ghost btn-sm" style="padding:2px 6px;" onclick="moveQuestion(${pi}, 1)">↓</button>` : ''}
+          <button class="btn btn-ghost btn-sm" style="padding:2px 6px;color:var(--red);" onclick="removeQuestion(${pi})">✕</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <input class="form-input" style="font-size:0.82rem;padding:7px 10px;" value="${p.texto || ''}"
+          placeholder="Texto da pergunta" oninput="q_set(${pi},this,'texto')">
+      </div>
+
+      ${['multipla_escolha','selecao_unica','botao','selecao_multipla'].includes(p.tipo) ? `
+        <div id="options-${pi}" style="margin-top:4px;">
+          ${(p.opcoes||[]).map((op,oi) => `
+            <div class="option-row">
+              <input class="option-icon-input" value="${op.icone||''}" placeholder="😀" oninput="op_set(${pi},${oi},this,'icone')">
+              <input class="option-text-input" value="${op.texto||''}" placeholder="Opção ${oi+1}" oninput="op_set(${pi},${oi},this,'texto')">
+              <button class="option-del-btn" onclick="removeOption(${pi},${oi})">✕</button>
+            </div>
+          `).join('')}
+          <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;margin-top:6px;" onclick="addOption(${pi})">+ Opção</button>
+        </div>
+      ` : ''}
+
+      ${p.tipo.startsWith('captura_') || p.tipo === 'texto' || p.tipo === 'numero' ? `
+        <input class="form-input" style="font-size:0.78rem;padding:6px 10px;margin-top:4px;" value="${p.placeholder||''}"
+          placeholder="Placeholder do campo" oninput="q_set(${pi},this,'placeholder')">
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+function renderFinalStepEdit() {
+  const area = document.getElementById('edit-area');
+  const pf = (quiz.config || {}).pagina_final || {};
+  area.innerHTML = `
+    <h3 style="margin-bottom:20px;font-size:1rem;">🎉 Página Final</h3>
+    <div class="form-group">
+      <label class="form-label">Título</label>
+      <input class="form-input" id="pf-titulo" value="${pf.titulo||'Obrigado!'}" oninput="pf_set(this,'titulo')">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Subtítulo</label>
+      <textarea class="form-input" id="pf-subtitulo" rows="2" oninput="pf_set(this,'subtitulo')">${pf.subtitulo||'Suas respostas foram registradas.'}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">URL de Redirecionamento</label>
+      <input class="form-input" type="url" id="pf-url" value="${pf.botao_url||''}" placeholder="https://..." oninput="pf_set(this,'botao_url')">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Texto do Botão</label>
+      <input class="form-input" id="pf-btn" value="${pf.botao_texto||'Continuar'}" oninput="pf_set(this,'botao_texto')">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Delay de Redirecionamento (segundos)</label>
+      <input class="form-input" type="number" value="${quiz.config?.redirect_delay||3}" min="1" max="30" oninput="cfg_set(this,'redirect_delay',true)">
+    </div>
+  `;
+}
+
+// ── Properties Panel ──
+function renderStepProps(step, i) {
+  document.getElementById('props-panel-title').textContent = 'Etapa ' + (i + 1);
+  document.getElementById('props-body').innerHTML = `
+    <div class="props-section">
+      <div class="props-section-title">Tipo de Etapa</div>
+      <div class="props-field">
+        <select class="form-select" onchange="step_set(this,'tipo')">
+          <option value="pergunta" ${step.tipo === 'pergunta' ? 'selected' : ''}>❓ Pergunta</option>
+          <option value="captura" ${step.tipo === 'captura' ? 'selected' : ''}>📧 Captura de Lead</option>
+          <option value="informativo" ${step.tipo === 'informativo' ? 'selected' : ''}>ℹ️ Informativo</option>
+        </select>
+      </div>
+    </div>
+    <div class="props-section">
+      <div class="props-section-title">Ordem</div>
+      <div style="display:flex;gap:6px;">
+        ${i > 0 ? `<button class="btn btn-secondary btn-sm" onclick="moveStep(${i}, -1)">↑ Subir</button>` : ''}
+        ${i < etapas.length - 1 ? `<button class="btn btn-secondary btn-sm" onclick="moveStep(${i}, 1)">↓ Descer</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderFinalStepProps() {
+  document.getElementById('props-panel-title').textContent = 'Página Final';
+  renderConfigProps(true);
+}
+
+function renderConfigProps(showingFinal) {
+  if (!showingFinal && activeStepIndex < etapas.length) return;
+  const config = quiz.config || {};
+  const cores = config.cores || {};
+  document.getElementById('props-body').innerHTML = `
+    <div class="props-section">
+      <div class="props-section-title">Aparência</div>
+      <div class="color-grid">
+        ${colorField('Primária', 'primaria', cores.primaria || '#6366F1')}
+        ${colorField('Secundária', 'secundaria', cores.secundaria || '#8B5CF6')}
+        ${colorField('Fundo', 'fundo', cores.fundo || '#FFFFFF')}
+        ${colorField('Texto', 'texto', cores.texto || '#1F2937')}
+      </div>
+      <div class="props-field" style="margin-top:10px;">
+        <label class="props-label">Fonte</label>
+        <select class="form-select" onchange="cores_set(this,'fonte_familia')">
+          ${['Inter','Poppins','Montserrat','Roboto','Lato','Open Sans','Nunito','Raleway'].map(f =>
+            `<option ${(config.fonte||'Inter') === f ? 'selected' : ''}>${f}</option>`
+          ).join('')}
+        </select>
+      </div>
+      <div class="props-field">
+        <label class="props-label">Borda Radius</label>
+        <input class="form-input" value="${config.borda_radius||'12px'}" oninput="cfg_set(this,'borda_radius')">
+      </div>
+    </div>
+
+    <div class="props-section">
+      <div class="props-section-title">Opções</div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px;">
+        <input type="checkbox" ${config.mostrar_progresso !== false ? 'checked' : ''} onchange="cfg_set(this,'mostrar_progresso',false,true)">
+        Mostrar barra de progresso
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.8rem;color:var(--text-secondary);">
+        <input type="checkbox" ${config.animacoes !== false ? 'checked' : ''} onchange="cfg_set(this,'animacoes',false,true)">
+        Animações
+      </label>
+    </div>
+
+    <div class="props-section">
+      <div class="props-section-title">Pixels & Rastreamento</div>
+      ${pixelField('Meta Pixel ID', 'meta_pixel_id')}
+      ${pixelField('TikTok Pixel ID', 'tiktok_pixel_id')}
+      ${pixelField('Google Analytics ID', 'ga_id')}
+      ${pixelField('GTM Container ID', 'gtm_id')}
+    </div>
+
+    <div class="props-section">
+      <div class="props-section-title">Webhook</div>
+      <input class="form-input" style="font-size:0.78rem;" placeholder="https://..." value="${config.webhook_url||''}"
+        oninput="cfg_set(this,'webhook_url')">
+      <small style="font-size:0.7rem;color:var(--text-muted);">Dispara POST a cada lead capturado</small>
+    </div>
+  `;
+}
+
+function colorField(label, key, val) {
+  return `<div class="color-field" style="flex-direction:column;gap:4px;">
+    <div class="props-label">${label}</div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input type="color" class="color-input" value="${val}" oninput="cores_set(this,'${key}')">
+      <span class="color-value">${val}</span>
+    </div>
+  </div>`;
+}
+
+function pixelField(label, key) {
+  const pixels = quiz.pixels || {};
+  return `<div class="pixel-row">
+    <span class="pixel-label">${label}</span>
+    <input class="form-input" style="font-size:0.75rem;padding:5px 8px;" value="${pixels[key]||''}"
+      placeholder="ID..." oninput="pixel_set(this,'${key}')">
+  </div>`;
+}
+
+// ── Mutation helpers ──
+function step_set(input, field) {
+  if (activeStepIndex < etapas.length) {
+    etapas[activeStepIndex][field] = input.value;
+    if (field === 'titulo') renderStepsList();
+    renderPreview();
+    markDirty();
+  }
+}
+
+function q_set(qi, input, field) {
+  etapas[activeStepIndex].perguntas[qi][field] = input.value;
+  renderPreview();
+  markDirty();
+}
+
+function op_set(qi, oi, input, field) {
+  etapas[activeStepIndex].perguntas[qi].opcoes[oi][field] = input.value;
+  renderPreview();
+  markDirty();
+}
+
+function cfg_set(input, key, isNumber, isBool) {
+  if (!quiz.config) quiz.config = {};
+  if (isBool) quiz.config[key] = input.checked;
+  else if (isNumber) quiz.config[key] = Number(input.value);
+  else quiz.config[key] = input.value;
+  renderPreview();
+  markDirty();
+}
+
+function cores_set(input, key) {
+  if (!quiz.config) quiz.config = {};
+  if (!quiz.config.cores) quiz.config.cores = {};
+  if (key === 'fonte_familia') quiz.config.fonte = input.value;
+  else quiz.config.cores[key] = input.value;
+  // Atualiza exibição hex ao lado do color picker
+  const wrap = input.parentElement;
+  const hexSpan = wrap.querySelector('.color-value');
+  if (hexSpan) hexSpan.textContent = input.value;
+  renderPreview();
+  markDirty();
+}
+
+function pf_set(input, key) {
+  if (!quiz.config) quiz.config = {};
+  if (!quiz.config.pagina_final) quiz.config.pagina_final = {};
+  quiz.config.pagina_final[key] = input.value;
+  renderPreview();
+  markDirty();
+}
+
+function pixel_set(input, key) {
+  if (!quiz.pixels) quiz.pixels = {};
+  quiz.pixels[key] = input.value;
+  markDirty();
+}
+
+// ── Steps management ──
+function addStep() {
+  const step = {
+    id: 'step_' + Date.now(),
+    tipo: 'pergunta',
+    titulo: 'Nova etapa',
+    descricao: '',
+    config: {},
+    perguntas: []
+  };
+  etapas.push(step);
+  selectStep(etapas.length - 1);
+  markDirty();
+}
+
+function deleteStep(e, i) {
+  e.stopPropagation();
+  if (etapas.length <= 1) { Toast.warning('O quiz precisa ter ao menos uma etapa'); return; }
+  etapas.splice(i, 1);
+  if (activeStepIndex >= etapas.length) activeStepIndex = etapas.length - 1;
+  selectStep(activeStepIndex);
+  markDirty();
+}
+
+function moveStep(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= etapas.length) return;
+  [etapas[i], etapas[j]] = [etapas[j], etapas[i]];
+  activeStepIndex = j;
+  renderAll();
+  markDirty();
+}
+
+// ── Questions management ──
+let _addQStepIndex;
+
+function openAddQuestion() {
+  _addQStepIndex = activeStepIndex;
+  document.getElementById('modal-add-question').style.display = 'flex';
+}
+
+function closeAddQuestion() {
+  document.getElementById('modal-add-question').style.display = 'none';
+}
+
+function addQuestion(tipo) {
+  const step = etapas[_addQStepIndex];
+  if (!step.perguntas) step.perguntas = [];
+  const q = {
+    id: 'q_' + Date.now(),
+    tipo,
+    texto: '',
+    placeholder: '',
+    opcoes: tipo.includes('escolha') || tipo.includes('selecao') || tipo === 'botao'
+      ? [{ id: 'op1', texto: 'Opção 1', icone: '' }, { id: 'op2', texto: 'Opção 2', icone: '' }]
+      : [],
+    obrigatoria: true
+  };
+  step.perguntas.push(q);
+  closeAddQuestion();
+  renderStepEdit(step);
+  renderPreview();
+  markDirty();
+}
+
+function removeQuestion(qi) {
+  etapas[activeStepIndex].perguntas.splice(qi, 1);
+  renderStepEdit(etapas[activeStepIndex]);
+  renderPreview();
+  markDirty();
+}
+
+function moveQuestion(qi, dir) {
+  const perguntas = etapas[activeStepIndex].perguntas;
+  const j = qi + dir;
+  if (j < 0 || j >= perguntas.length) return;
+  [perguntas[qi], perguntas[j]] = [perguntas[j], perguntas[qi]];
+  renderStepEdit(etapas[activeStepIndex]);
+  markDirty();
+}
+
+function addOption(qi) {
+  const opcoes = etapas[activeStepIndex].perguntas[qi].opcoes;
+  opcoes.push({ id: 'op_' + Date.now(), texto: 'Opção ' + (opcoes.length + 1), icone: '' });
+  renderStepEdit(etapas[activeStepIndex]);
+  renderPreview();
+  markDirty();
+}
+
+function removeOption(qi, oi) {
+  etapas[activeStepIndex].perguntas[qi].opcoes.splice(oi, 1);
+  renderStepEdit(etapas[activeStepIndex]);
+  renderPreview();
+  markDirty();
+}
+
+// ── Save / Publish ──
+function markDirty() {
+  isDirty = true;
+  document.getElementById('unsaved-dot').classList.add('visible');
+}
+
+async function saveQuiz() {
+  const btn = document.getElementById('btn-save');
+  setLoading(btn, true, 'Salvando...');
+
+  try {
+    const payload = {
+      nome: document.getElementById('quiz-name-input').value,
+      config: quiz.config,
+      pixels: quiz.pixels,
+      etapas: etapas
+    };
+
+    const res = await API.updateQuiz(QUIZ_ID, payload);
+    if (res?.success) {
+      isDirty = false;
+      document.getElementById('unsaved-dot').classList.remove('visible');
+      Toast.success('Salvo!');
+    } else {
+      Toast.error(res?.message || 'Erro ao salvar');
+    }
+  } catch(e) {
+    Toast.error('Erro: ' + e.message);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function publishQuiz() {
+  // Salva primeiro
+  await saveQuiz();
+
+  const res = await API.updateQuiz(QUIZ_ID, { status: 'published' });
+  if (res?.success) {
+    quiz.status = 'published';
+    document.getElementById('status-badge').textContent = 'Publicado';
+    document.getElementById('status-badge').className = 'badge badge-success';
+    Toast.success('Quiz publicado! Gere o código para usar no seu site.');
+    switchEditorTab('code', document.getElementById('tab-code-btn'));
+  }
+}
+
+// ── Code generation ──
+async function generateCode() {
+  const btn = document.querySelector('.code-actions .btn-primary');
+  setLoading(btn, true, 'Gerando...');
+
+  try {
+    // Salva antes de gerar
+    if (isDirty) await saveQuiz();
+
+    const minify = document.getElementById('minify-check').checked;
+    const res = await API.generateCode(QUIZ_ID, minify);
+
+    if (res?.success) {
+      const code = res.data.full;
+      document.getElementById('generated-code-textarea').value = code;
+      document.getElementById('btn-copy-code').disabled = false;
+      document.getElementById('btn-download-code').disabled = false;
+      Toast.success('Código gerado!');
+    } else {
+      Toast.error(res?.message || 'Erro ao gerar código');
+    }
+  } catch(e) {
+    Toast.error('Erro: ' + e.message);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function copyCode() {
+  const code = document.getElementById('generated-code-textarea').value;
+  const ok = await copyToClipboard(code);
+  ok ? Toast.success('Código copiado!') : Toast.error('Erro ao copiar');
+}
+
+function downloadCode() {
+  const code = document.getElementById('generated-code-textarea').value;
+  downloadFile(code, 'quiz-' + QUIZ_ID + '.html', 'text/html');
+}
+
+// ── Tabs ──
+function switchEditorTab(tab, btn) {
+  document.querySelectorAll('.editor-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.editor-tab-content').forEach(c => c.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'preview') renderPreview();
+}
+
+// Aviso ao sair com alterações não salvas
+window.addEventListener('beforeunload', e => {
+  if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// ── Init ──
+loadQuiz();
+</script>
+</body>
+</html>

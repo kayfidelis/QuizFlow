@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizFlow — Leads</title>
+  <link rel="stylesheet" href="global.css">
+  <style>
+    .filters-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      align-items: flex-end;
+    }
+
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    .filter-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+
+    .filters-bar .form-input,
+    .filters-bar .form-select {
+      height: 38px;
+      font-size: 0.82rem;
+      padding: 0 12px;
+    }
+
+    .search-input { width: 240px; }
+
+    .leads-count {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-elevated);
+    }
+
+    .pagination-btns { display: flex; gap: 4px; }
+
+    .page-btn {
+      width: 32px; height: 32px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.78rem;
+      transition: all var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .page-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .page-btn.active { background: var(--amber); border-color: var(--amber); color: #07080F; font-weight: 700; }
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* Lead detail modal */
+    .modal-overlay { position:fixed;inset:0;background:rgba(7,8,15,0.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px); }
+    .modal { background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:36px;max-width:580px;width:100%;box-shadow:var(--shadow-lg);animation:fadeIn .25s var(--transition-spring);max-height:90vh;overflow-y:auto; }
+
+    .modal-header { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;gap:16px; }
+    .modal-close { background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem;padding:4px; transition:color var(--transition); }
+    .modal-close:hover { color:var(--text-primary); }
+
+    .lead-avatar { width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--amber));display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:white;flex-shrink:0; }
+
+    .detail-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px; }
+    .detail-item { background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px; }
+    .detail-item-label { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:4px; }
+    .detail-item-val { font-size:0.875rem;font-weight:600;color:var(--text-primary); }
+
+    .answers-section { margin-top:20px; }
+    .answer-row { display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border); }
+    .answer-row:last-child { border-bottom:none; }
+    .answer-q { font-size:0.78rem;color:var(--text-muted);flex:1; }
+    .answer-a { font-size:0.78rem;font-weight:600;color:var(--text-primary);flex:1;text-align:right; }
+
+    .events-timeline { margin-top:20px; }
+    .event-item { display:flex;gap:12px;padding:8px 0;position:relative; }
+    .event-dot { width:8px;height:8px;border-radius:50%;background:var(--amber);margin-top:5px;flex-shrink:0; }
+    .event-content { flex:1; }
+    .event-tipo { font-size:0.78rem;font-weight:600;color:var(--text-primary); }
+    .event-time { font-size:0.7rem;color:var(--text-muted); }
+
+    .export-bar { display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center; }
+
+    tr td { vertical-align: middle; }
+    .lead-name-cell { display:flex;align-items:center;gap:10px; }
+    .lead-mini-avatar { width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--amber));display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:white;flex-shrink:0; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">⚡</div>QuizFlow</div></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a>
+      <a href="quizzes.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Meus Quizzes</a>
+      <a href="leads.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Leads</a>
+      <a href="analytics.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+      <div class="nav-section-label">Configurações</div>
+      <a href="settings.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar" id="user-avatar-initials">U</div>
+        <div class="user-info"><div class="user-name" id="sidebar-user-name">—</div><div class="user-email" id="sidebar-user-email">—</div></div>
+      </div>
+      <button class="nav-link btn-ghost" id="btn-logout" style="width:100%;margin-top:4px;color:var(--red);">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="sidebar-toggle" id="sidebar-toggle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+        <span class="page-title">Leads</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" id="btn-export" onclick="exportCSV()">
+          ⬇ Exportar CSV
+        </button>
+      </div>
+    </header>
+
+    <div class="page-body">
+
+      <!-- Filtros -->
+      <div class="filters-bar">
+        <div class="filter-group">
+          <span class="filter-label">Buscar</span>
+          <input type="search" id="filter-search" class="form-input search-input" placeholder="Nome, email, WhatsApp..." oninput="debouncedLoad()">
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Quiz</span>
+          <select id="filter-quiz" class="form-select" style="width:200px;" onchange="loadLeads()">
+            <option value="">Todos os quizzes</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Período</span>
+          <div style="display:flex;gap:6px;">
+            <input type="date" id="filter-start" class="form-input" style="width:140px;" onchange="loadLeads()">
+            <input type="date" id="filter-end" class="form-input" style="width:140px;" onchange="loadLeads()">
+          </div>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Status</span>
+          <select id="filter-conv" class="form-select" style="width:130px;" onchange="loadLeads()">
+            <option value="">Todos</option>
+            <option value="true">Converteu</option>
+            <option value="false">Parcial</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Limpar</button>
+      </div>
+
+      <!-- Table -->
+      <div class="card" style="padding:0;">
+        <div class="table-wrap" style="border:none;border-radius:0;">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>WhatsApp</th>
+                <th>Quiz</th>
+                <th>Origem</th>
+                <th>Dispositivo</th>
+                <th>Status</th>
+                <th>Data</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="leads-tbody">
+              <tr><td colspan="9" style="text-align:center;padding:48px;color:var(--text-muted);"><span class="spinner"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination" style="display:none;">
+          <span class="leads-count" id="leads-count-text">0 leads</span>
+          <div class="pagination-btns" id="pagination-btns"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Lead detail modal -->
+<div class="modal-overlay" id="modal-lead" style="display:none;" onclick="if(event.target===this)closeLead()">
+  <div class="modal" id="modal-lead-content">
+    <div style="text-align:center;padding:32px;"><span class="spinner"></span></div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="utils.js"></script>
+<script>
+if (!Auth.requireAuth()) throw '';
+initSidebar();
+
+const user = Auth.getUser();
+if (user) {
+  const initials = (user.nome || 'U').split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('user-avatar-initials').textContent = initials;
+}
+
+let currentPage = 1;
+const PAGE_SIZE = 50;
+
+const debouncedLoad = debounce(() => { currentPage = 1; loadLeads(); }, 400);
+
+async function init() {
+  // Preenche select de quizzes
+  const quizSelect = document.getElementById('filter-quiz');
+  try {
+    const res = await API.leadsFilterOptions();
+    if (res?.success) {
+      quizSelect.innerHTML = '<option value="">Todos os quizzes</option>' +
+        res.data.map(q => `<option value="${q.id}">${q.nome} (${q.leads_count})</option>`).join('');
+    }
+  } catch(e) {}
+
+  // Pré-seleciona quiz se veio por query string
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('quiz_id')) quizSelect.value = qs.get('quiz_id');
+
+  loadLeads();
+}
+
+async function loadLeads() {
+  const tbody = document.getElementById('leads-tbody');
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:48px;"><span class="spinner"></span></td></tr>`;
+
+  const params = {
+    page: currentPage,
+    page_size: PAGE_SIZE,
+    search: document.getElementById('filter-search').value,
+    quiz_id: document.getElementById('filter-quiz').value,
+    start_date: document.getElementById('filter-start').value,
+    end_date: document.getElementById('filter-end').value,
+    converteu: document.getElementById('filter-conv').value
+  };
+
+  try {
+    const res = await API.listLeads(params);
+    if (!res?.success) { Toast.error(res?.message || 'Erro'); return; }
+    renderLeads(res.data);
+  } catch(e) {
+    Toast.error('Erro de conexão');
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--red);">Erro ao carregar leads</td></tr>`;
+  }
+}
+
+function renderLeads(data) {
+  const tbody = document.getElementById('leads-tbody');
+  const items = data.items || [];
+
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:56px;">
+      <div class="empty-state" style="padding:0;">
+        <div class="empty-state-icon">📭</div>
+        <h3>Nenhum lead encontrado</h3>
+        <p>Tente ajustar os filtros</p>
+      </div>
+    </td></tr>`;
+    document.getElementById('pagination').style.display = 'none';
+    return;
+  }
+
+  tbody.innerHTML = items.map(l => {
+    const initials = (l.nome || l.email || '?').substring(0, 1).toUpperCase();
+    const wa = formatWA(l.whatsapp);
+    return `<tr onclick="viewLead('${l.id}')" style="cursor:pointer;">
+      <td>
+        <div class="lead-name-cell">
+          <div class="lead-mini-avatar">${initials}</div>
+          <span style="color:var(--text-primary);font-weight:500;">${l.nome || '—'}</span>
+        </div>
+      </td>
+      <td>${l.email || '—'}</td>
+      <td>${wa || '—'}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${l.quiz_nome||''}">${l.quiz_nome || '—'}</td>
+      <td><span class="badge badge-muted">${l.origem || 'direto'}</span></td>
+      <td>${deviceIcon(l.dispositivo)} ${l.dispositivo || '—'}</td>
+      <td>
+        <span class="badge ${l.converteu === true || l.converteu === 'true' ? 'badge-success' : 'badge-warning'}">
+          ${l.converteu === true || l.converteu === 'true' ? '✓ Converteu' : '⏸ Parcial'}
+        </span>
+      </td>
+      <td style="white-space:nowrap;font-size:0.8rem;">${formatDate(l.criado_em)}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteLead('${l.id}')" title="Excluir" style="color:var(--red);padding:4px 8px;">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Paginação
+  const total = data.total || 0;
+  const totalPages = data.totalPages || 1;
+  const pagination = document.getElementById('pagination');
+  const countText = document.getElementById('leads-count-text');
+  const btns = document.getElementById('pagination-btns');
+
+  countText.textContent = total + ' lead' + (total !== 1 ? 's' : '');
+  pagination.style.display = 'flex';
+
+  // Gera botões de página
+  let pagesHTML = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>‹</button>`;
+
+  let start = Math.max(1, currentPage - 2);
+  let end = Math.min(totalPages, start + 4);
+  if (end - start < 4) start = Math.max(1, end - 4);
+
+  for (let p = start; p <= end; p++) {
+    pagesHTML += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
+  }
+  pagesHTML += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>›</button>`;
+  btns.innerHTML = pagesHTML;
+}
+
+function goPage(p) {
+  if (p < 1) return;
+  currentPage = p;
+  loadLeads();
+}
+
+async function viewLead(id) {
+  document.getElementById('modal-lead').style.display = 'flex';
+  document.getElementById('modal-lead-content').innerHTML = '<div style="text-align:center;padding:32px;"><span class="spinner"></span></div>';
+
+  try {
+    const res = await API.getLead(id);
+    if (!res?.success) { Toast.error(res?.message); return; }
+    renderLeadModal(res.data);
+  } catch(e) {
+    Toast.error('Erro: ' + e.message);
+  }
+}
+
+function renderLeadModal(l) {
+  const respostas = l.respostas || {};
+  const utms = l.utms || {};
+  const eventos = l.eventos || [];
+  const initials = (l.nome || l.email || '?').substring(0,2).toUpperCase();
+
+  document.getElementById('modal-lead-content').innerHTML = `
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="lead-avatar">${initials}</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;">${l.nome || 'Sem nome'}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);">${l.email || ''}</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeLead()">✕</button>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-item-label">WhatsApp</div>
+        <div class="detail-item-val">${formatWA(l.whatsapp) || '—'}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-item-label">Origem</div>
+        <div class="detail-item-val">${l.origem || 'direto'}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-item-label">Dispositivo</div>
+        <div class="detail-item-val">${deviceIcon(l.dispositivo)} ${l.dispositivo || '—'}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-item-label">Tempo no quiz</div>
+        <div class="detail-item-val">${formatTime(Number(l.tempo_total))}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-item-label">Etapas concluídas</div>
+        <div class="detail-item-val">${l.etapa_final} / ${l.total_etapas}</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-item-label">Capturado em</div>
+        <div class="detail-item-val" style="font-size:0.78rem;">${formatDate(l.criado_em)}</div>
+      </div>
+    </div>
+
+    ${Object.keys(utms).length ? `
+      <div style="margin-bottom:16px;">
+        <div class="props-section-title" style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">UTMs</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${Object.entries(utms).map(([k,v]) => `<span class="badge badge-violet">${k}: ${v}</span>`).join('')}
+        </div>
+      </div>
+    ` : ''}
+
+    ${Object.keys(respostas).length ? `
+      <div class="answers-section">
+        <div class="props-section-title" style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">Respostas</div>
+        ${Object.entries(respostas).map(([q, a]) => `
+          <div class="answer-row">
+            <span class="answer-q">${q}</span>
+            <span class="answer-a">${Array.isArray(a) ? a.join(', ') : a}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    ${eventos.length ? `
+      <div class="events-timeline" style="margin-top:20px;">
+        <div class="props-section-title" style="font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);">Timeline de Eventos</div>
+        ${eventos.slice(0, 10).map(e => `
+          <div class="event-item">
+            <div class="event-dot" style="background:${eventColor(e.tipo)}"></div>
+            <div class="event-content">
+              <div class="event-tipo">${e.tipo}</div>
+              <div class="event-time">${formatDate(e.timestamp)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    <div style="margin-top:24px;display:flex;gap:10px;">
+      ${l.whatsapp ? `<a href="https://wa.me/55${l.whatsapp.replace(/\D/g,'')}" target="_blank" class="btn btn-primary btn-sm">💬 WhatsApp</a>` : ''}
+      ${l.email ? `<a href="mailto:${l.email}" class="btn btn-secondary btn-sm">✉️ Email</a>` : ''}
+      <button class="btn btn-danger btn-sm" onclick="deleteLead('${l.id}',true)" style="margin-left:auto;">Excluir lead</button>
+    </div>
+  `;
+}
+
+function closeLead() {
+  document.getElementById('modal-lead').style.display = 'none';
+}
+
+async function deleteLead(id, fromModal) {
+  const ok = await confirmAction('Excluir este lead permanentemente?');
+  if (!ok) return;
+  try {
+    const res = await API.deleteLead(id);
+    if (res?.success) {
+      Toast.success('Lead removido');
+      if (fromModal) closeLead();
+      loadLeads();
+    } else {
+      Toast.error(res?.message || 'Erro');
+    }
+  } catch(e) { Toast.error('Erro: ' + e.message); }
+}
+
+async function exportCSV() {
+  const btn = document.getElementById('btn-export');
+  setLoading(btn, true, 'Exportando...');
+
+  const params = {
+    search: document.getElementById('filter-search').value,
+    quiz_id: document.getElementById('filter-quiz').value,
+    start_date: document.getElementById('filter-start').value,
+    end_date: document.getElementById('filter-end').value
+  };
+
+  try {
+    const res = await API.exportLeadsCSV(params);
+    if (res?.success) {
+      downloadFile(res.data.csv, res.data.filename, 'text/csv;charset=utf-8;');
+      Toast.success(`${res.data.count} leads exportados`);
+    } else {
+      Toast.error(res?.message || 'Erro ao exportar');
+    }
+  } catch(e) { Toast.error('Erro: ' + e.message); }
+  finally { setLoading(btn, false); }
+}
+
+function clearFilters() {
+  document.getElementById('filter-search').value = '';
+  document.getElementById('filter-quiz').value = '';
+  document.getElementById('filter-start').value = '';
+  document.getElementById('filter-end').value = '';
+  document.getElementById('filter-conv').value = '';
+  currentPage = 1;
+  loadLeads();
+}
+
+function deviceIcon(d) {
+  if (!d) return '';
+  if (d === 'mobile') return '📱';
+  if (d === 'tablet') return '📋';
+  return '🖥';
+}
+
+function eventColor(tipo) {
+  const map = { QuizView:'#8892B0', QuizStart:'#FFBA00', StepView:'#7C6FFF', StepComplete:'#2ECC87', LeadCaptured:'#FF5C35', QuizComplete:'#FFBA00', RedirectClick:'#FF5C35' };
+  return map[tipo] || '#8892B0';
+}
+
+function formatWA(w) {
+  if (!w) return '';
+  w = String(w).replace(/\D/g,'');
+  if (w.length === 11) return `(${w.slice(0,2)}) ${w.slice(2,7)}-${w.slice(7)}`;
+  if (w.length === 10) return `(${w.slice(0,2)}) ${w.slice(2,6)}-${w.slice(6)}`;
+  return w;
+}
+
+init();
+</script>
+</body>
+</html>

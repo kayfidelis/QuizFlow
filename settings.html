@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizFlow — Configurações</title>
+  <link rel="stylesheet" href="global.css">
+  <style>
+    .settings-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .settings-nav {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 8px;
+      position: sticky;
+      top: calc(var(--topbar-h) + 24px);
+    }
+
+    .settings-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all var(--transition);
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .settings-nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .settings-nav-item.active {
+      background: var(--amber-glow);
+      color: var(--amber);
+      border: 1px solid rgba(255,186,0,0.15);
+    }
+
+    .settings-section { display: none; }
+    .settings-section.active { display: block; animation: fadeIn 0.2s ease; }
+
+    .settings-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    .settings-card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .settings-card-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .profile-avatar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .profile-avatar-large {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--violet), var(--amber));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: white;
+      border: 3px solid var(--bg-elevated);
+    }
+
+    .badge-plan {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .badge-plan.free { background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-plan.pro { background: rgba(255,186,0,0.12); color: var(--amber); border: 1px solid rgba(255,186,0,0.25); }
+    .badge-plan.admin { background: rgba(255,92,53,0.12); color: var(--coral); border: 1px solid rgba(255,92,53,0.25); }
+
+    .api-url-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--amber);
+      word-break: break-all;
+      margin-bottom: 12px;
+    }
+
+    .api-url-copy {
+      flex-shrink: 0;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color var(--transition);
+      font-size: 1rem;
+    }
+
+    .api-url-copy:hover { color: var(--text-primary); }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+
+    .info-row:last-child { border-bottom: none; }
+    .info-row-label { color: var(--text-muted); }
+    .info-row-val { font-weight: 600; color: var(--text-primary); }
+
+    .danger-zone {
+      border: 1px solid rgba(255,71,87,0.25);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+    }
+
+    .danger-zone-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--red);
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .settings-layout { grid-template-columns: 1fr; }
+      .settings-nav { position: static; display: flex; overflow-x: auto; padding: 4px; gap: 4px; }
+      .settings-nav-item { white-space: nowrap; flex-shrink: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">⚡</div>QuizFlow</div></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a>
+      <a href="quizzes.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Meus Quizzes</a>
+      <a href="leads.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Leads</a>
+      <a href="analytics.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+      <div class="nav-section-label">Configurações</div>
+      <a href="settings.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user"><div class="user-avatar" id="user-avatar-initials">U</div><div class="user-info"><div class="user-name" id="sidebar-user-name">—</div><div class="user-email" id="sidebar-user-email">—</div></div></div>
+      <button class="nav-link btn-ghost" id="btn-logout" style="width:100%;margin-top:4px;color:var(--red);">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="sidebar-toggle" id="sidebar-toggle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+        <span class="page-title">Configurações</span>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <div class="settings-layout">
+
+        <!-- Settings nav -->
+        <div class="settings-nav">
+          <button class="settings-nav-item active" onclick="switchSection('perfil', this)">
+            👤 Perfil
+          </button>
+          <button class="settings-nav-item" onclick="switchSection('api', this)">
+            🔌 Conexão API
+          </button>
+          <button class="settings-nav-item" onclick="switchSection('conta', this)">
+            🔒 Segurança
+          </button>
+        </div>
+
+        <!-- Settings content -->
+        <div>
+
+          <!-- Perfil -->
+          <div class="settings-section active" id="section-perfil">
+            <div class="settings-card">
+              <div class="settings-card-title">Perfil</div>
+              <div class="settings-card-desc">Gerencie suas informações pessoais</div>
+
+              <div class="profile-avatar-wrap">
+                <div class="profile-avatar-large" id="profile-avatar">U</div>
+                <div>
+                  <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;" id="profile-name-display">—</div>
+                  <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;" id="profile-email-display">—</div>
+                  <div id="profile-plan-badge" class="badge-plan free">Plano Free</div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Nome</label>
+                <input type="text" id="profile-nome" class="form-input" placeholder="Seu nome">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="profile-email-input" class="form-input" disabled style="opacity:0.6;">
+                <small style="font-size:0.72rem;color:var(--text-muted);">O email não pode ser alterado</small>
+              </div>
+
+              <button class="btn btn-primary" id="btn-save-profile" onclick="saveProfile()">
+                Salvar alterações
+              </button>
+            </div>
+          </div>
+
+          <!-- API -->
+          <div class="settings-section" id="section-api">
+            <div class="settings-card">
+              <div class="settings-card-title">Conexão com Apps Script</div>
+              <div class="settings-card-desc">Configure a URL do seu Web App no Google Apps Script. Esta URL é onde todos os dados são armazenados.</div>
+
+              <div class="form-group">
+                <label class="form-label">URL Atual</label>
+                <div class="api-url-display" id="api-url-current">
+                  <span id="api-url-text" style="flex:1;word-break:break-all;">Não configurado</span>
+                  <button class="api-url-copy" onclick="copyApiUrl()" title="Copiar">📋</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Nova URL</label>
+                <input type="url" id="new-api-url" class="form-input" placeholder="https://script.google.com/macros/s/...">
+                <small style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;display:block;">
+                  ⚠️ Alterar a URL desconecta do backend atual. Todos os dados ficam no Apps Script.
+                </small>
+              </div>
+
+              <button class="btn btn-primary" onclick="saveApiUrl()">
+                Atualizar URL
+              </button>
+            </div>
+
+            <div class="settings-card">
+              <div class="settings-card-title">🔌 Como configurar</div>
+              <div class="settings-card-desc">Passo a passo para publicar o Apps Script</div>
+
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                ${[
+                  ['1', 'Acesse', 'script.google.com e crie um novo projeto'],
+                  ['2', 'Cole os arquivos', 'Utils.gs, SheetDB.gs, Auth.gs, QuizService.gs, TrackingService.gs, LeadService.gs, CodeGenerator.gs, Code.gs'],
+                  ['3', 'Publique', 'Clique em "Implantar → Nova Implantação"'],
+                  ['4', 'Configure', 'Tipo: Web App | Executar como: Você | Acesso: Qualquer pessoa'],
+                  ['5', 'Copie a URL', 'Cole a URL acima e salve'],
+                  ['6', 'Setup inicial', 'Vá em index.html → "Configurar agora" e crie o admin']
+                ].map(([n, t, d]) => `
+                  <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="width:24px;height:24px;border-radius:50%;background:var(--amber);color:#07080F;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${n}</div>
+                    <div><strong style="color:var(--text-primary);font-size:0.875rem;">${t}</strong> <span style="color:var(--text-muted);font-size:0.82rem;">${d}</span></div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Segurança -->
+          <div class="settings-section" id="section-conta">
+            <div class="settings-card">
+              <div class="settings-card-title">Alterar Senha</div>
+              <div class="settings-card-desc">Use uma senha forte com letras, números e símbolos</div>
+
+              <div class="form-group">
+                <label class="form-label">Senha atual</label>
+                <input type="password" id="senha-atual" class="form-input" placeholder="••••••••">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nova senha</label>
+                <input type="password" id="senha-nova" class="form-input" placeholder="Mínimo 8 caracteres" minlength="8">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirmar nova senha</label>
+                <input type="password" id="senha-confirm" class="form-input" placeholder="Repita a nova senha">
+              </div>
+
+              <button class="btn btn-primary" id="btn-save-senha" onclick="savePassword()">
+                Atualizar senha
+              </button>
+            </div>
+
+            <div class="settings-card">
+              <div class="settings-card-title">Informações da Conta</div>
+              <div>
+                <div class="info-row">
+                  <span class="info-row-label">ID da conta</span>
+                  <span class="info-row-val" id="account-id" style="font-family:'IBM Plex Mono',monospace;font-size:0.78rem;">—</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label">Plano</span>
+                  <span class="info-row-val" id="account-plan">—</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-row-label">Membro desde</span>
+                  <span class="info-row-val" id="account-created">—</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="danger-zone">
+              <div class="danger-zone-title">⚠️ Zona de Perigo</div>
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px;line-height:1.5;">
+                Fazer logout encerra sua sessão em todos os dispositivos.
+              </p>
+              <button class="btn btn-danger" id="btn-logout-all" onclick="logoutAll()">
+                Sair de todos os dispositivos
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="utils.js"></script>
+<script>
+if (!Auth.requireAuth()) throw '';
+initSidebar();
+
+const user = Auth.getUser();
+
+function init() {
+  if (!user) return;
+
+  const initials = (user.nome || 'U').split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('user-avatar-initials').textContent = initials;
+  document.getElementById('profile-avatar').textContent = initials;
+  document.getElementById('profile-name-display').textContent = user.nome || '—';
+  document.getElementById('profile-email-display').textContent = user.email || '—';
+  document.getElementById('profile-nome').value = user.nome || '';
+  document.getElementById('profile-email-input').value = user.email || '';
+
+  // Plano
+  const plan = user.plano || 'free';
+  const planBadge = document.getElementById('profile-plan-badge');
+  const planLabels = { free: 'Plano Free', pro: '⭐ Pro', admin: '🔥 Admin' };
+  planBadge.textContent = planLabels[plan] || plan;
+  planBadge.className = 'badge-plan ' + plan;
+
+  // Conta
+  document.getElementById('account-id').textContent = user.id || '—';
+  document.getElementById('account-plan').textContent = (planLabels[plan] || plan);
+
+  // API URL
+  const apiUrl = API.getApiUrl();
+  document.getElementById('api-url-text').textContent = apiUrl || 'Não configurado';
+  document.getElementById('new-api-url').value = apiUrl || '';
+
+  // Carrega dados adicionais do perfil
+  loadProfile();
+}
+
+async function loadProfile() {
+  try {
+    const res = await API.getProfile();
+    if (res?.success && res.data) {
+      // Atualiza campos com dados frescos do servidor
+      document.getElementById('profile-nome').value = res.data.nome || '';
+    }
+  } catch(e) {}
+}
+
+async function saveProfile() {
+  const btn = document.getElementById('btn-save-profile');
+  const nome = document.getElementById('profile-nome').value.trim();
+
+  if (!nome) { Toast.warning('Informe seu nome'); return; }
+
+  setLoading(btn, true, 'Salvando...');
+  try {
+    const res = await API.updateProfile({ nome });
+    if (res?.success) {
+      // Atualiza sessão local
+      const updated = { ...user, nome };
+      Auth.setSession(Auth.getToken(), updated);
+      document.getElementById('profile-name-display').textContent = nome;
+      document.getElementById('user-avatar-initials').textContent = nome.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+      document.getElementById('profile-avatar').textContent = nome.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+      document.getElementById('sidebar-user-name').textContent = nome;
+      Toast.success('Perfil atualizado!');
+    } else {
+      Toast.error(res?.message || 'Erro ao salvar');
+    }
+  } catch(e) {
+    Toast.error('Erro: ' + e.message);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function savePassword() {
+  const btn = document.getElementById('btn-save-senha');
+  const atual = document.getElementById('senha-atual').value;
+  const nova = document.getElementById('senha-nova').value;
+  const confirm = document.getElementById('senha-confirm').value;
+
+  if (!atual || !nova || !confirm) { Toast.warning('Preencha todos os campos'); return; }
+  if (nova.length < 8) { Toast.warning('Nova senha deve ter mínimo 8 caracteres'); return; }
+  if (nova !== confirm) { Toast.warning('As senhas não coincidem'); return; }
+
+  setLoading(btn, true, 'Salvando...');
+  try {
+    const res = await API.updateProfile({ senha_atual: atual, senha_nova: nova });
+    if (res?.success) {
+      Toast.success('Senha atualizada!');
+      document.getElementById('senha-atual').value = '';
+      document.getElementById('senha-nova').value = '';
+      document.getElementById('senha-confirm').value = '';
+    } else {
+      Toast.error(res?.message || 'Erro ao atualizar');
+    }
+  } catch(e) {
+    Toast.error('Erro: ' + e.message);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function saveApiUrl() {
+  const url = document.getElementById('new-api-url').value.trim();
+  if (!url) { Toast.warning('Insira uma URL válida'); return; }
+  if (!url.startsWith('https://')) { Toast.warning('A URL deve começar com https://'); return; }
+  API.setApiUrl(url); // Recarrega a página
+}
+
+async function copyApiUrl() {
+  const url = API.getApiUrl();
+  if (!url) { Toast.warning('Nenhuma URL configurada'); return; }
+  const ok = await copyToClipboard(url);
+  ok ? Toast.success('URL copiada!') : Toast.error('Erro ao copiar');
+}
+
+async function logoutAll() {
+  const ok = await confirmAction('Isso encerrará sua sessão em todos os dispositivos. Você precisará fazer login novamente.');
+  if (!ok) return;
+  try { await API.logout(); } catch(e) {}
+  Auth.logout();
+  window.location.href = 'index.html';
+}
+
+function switchSection(section, btn) {
+  document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('section-' + section).classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>
