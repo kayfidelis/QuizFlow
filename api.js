@@ -1,27 +1,17 @@
-// ============================================================
-// api.js — Camada de comunicação com o Apps Script
-// ============================================================
-
+// api.js — usa apenas GET para evitar preflight CORS no Apps Script
 const API = (() => {
-  const FIXED_URL = 'https://script.google.com/macros/s/AKfycbxVONM2rNPWjSrJJ0d4RDTmUaJh53k-2IrOG-tromEY6e02GtQdrQ-km1QD51UjTorfhw/exec';
+  const BASE_URL = 'https://script.google.com/macros/s/AKfycbxVONM2rNPWjSrJJ0d4RDTmUaJh53k-2IrOG-tromEY6e02GtQdrQ-km1QD51UjTorfhw/exec';
 
-  function getBaseUrl() {
-    return localStorage.getItem('qf_api_url') || FIXED_URL;
-  }
+  function getToken() { return localStorage.getItem('qf_token') || ''; }
 
-  function getToken() {
-    return localStorage.getItem('qf_token') || '';
-  }
-
-  async function get(action, params = {}) {
-    const BASE_URL = getBaseUrl();
+  async function call(params) {
     const url = new URL(BASE_URL);
-    url.searchParams.set('action', action);
     url.searchParams.set('token', getToken());
     Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
+      if (v !== undefined && v !== null && v !== '') {
+        url.searchParams.set(k, typeof v === 'object' ? JSON.stringify(v) : v);
+      }
     });
-
     const res = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
     if (!res.ok) throw new Error('Erro de rede: ' + res.status);
     const data = await res.json();
@@ -29,43 +19,29 @@ const API = (() => {
     return data;
   }
 
-  async function post(action, body = {}) {
-    const BASE_URL = getBaseUrl();
-    const res = await fetch(BASE_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, token: getToken(), ...body })
-    });
-    if (!res.ok) throw new Error('Erro de rede: ' + res.status);
-    const data = await res.json();
-    if (data.code === 401) { Auth.logout(); window.location.href = 'index.html'; return; }
-    return data;
-  }
-
   return {
-    login: (email, password) => post('login', { email, password }),
-    register: (email, password, nome) => post('register', { email, password, nome }),
-    logout: () => post('logout'),
-    getDashboard: () => get('dashboard'),
-    listQuizzes: () => get('list_quizzes'),
-    getQuiz: (quizId) => get('get_quiz', { quiz_id: quizId }),
-    createQuiz: (data) => post('create_quiz', data),
-    updateQuiz: (quizId, data) => post('update_quiz', { quiz_id: quizId, ...data }),
-    deleteQuiz: (quizId) => post('delete_quiz', { quiz_id: quizId }),
-    duplicateQuiz: (quizId) => post('duplicate_quiz', { quiz_id: quizId }),
-    getTemplates: () => get('get_templates'),
-    generateCode: (quizId, minify) => get('generate_code', { quiz_id: quizId, minify }),
-    listLeads: (params) => get('list_leads', params),
-    getLead: (leadId) => get('get_lead', { lead_id: leadId }),
-    deleteLead: (leadId) => post('delete_lead', { lead_id: leadId }),
-    exportLeadsCSV: (params) => get('export_leads_csv', params),
-    leadsFilterOptions: () => get('leads_filter_options'),
-    getAnalytics: (quizId, params) => get('quiz_analytics', { quiz_id: quizId, ...params }),
-    getProfile: () => get('get_profile'),
-    updateProfile: (data) => post('update_profile', data),
-    setApiUrl: (url) => { localStorage.setItem('qf_api_url', url); location.reload(); },
-    getApiUrl: () => getBaseUrl(),
-    isConfigured: () => true
+    login:             (email, password)   => call({ action: 'login', email, password }),
+    register:          (email, password, nome) => call({ action: 'register', email, password, nome }),
+    logout:            ()                  => call({ action: 'logout' }),
+    getDashboard:      ()                  => call({ action: 'dashboard' }),
+    listQuizzes:       ()                  => call({ action: 'list_quizzes' }),
+    getQuiz:           (id)                => call({ action: 'get_quiz', quiz_id: id }),
+    createQuiz:        (data)              => call({ action: 'create_quiz', ...data }),
+    updateQuiz:        (id, data)          => call({ action: 'update_quiz', quiz_id: id, ...data }),
+    deleteQuiz:        (id)                => call({ action: 'delete_quiz', quiz_id: id }),
+    duplicateQuiz:     (id)                => call({ action: 'duplicate_quiz', quiz_id: id }),
+    getTemplates:      ()                  => call({ action: 'get_templates' }),
+    generateCode:      (id, minify)        => call({ action: 'generate_code', quiz_id: id, minify }),
+    listLeads:         (params)            => call({ action: 'list_leads', ...params }),
+    getLead:           (id)                => call({ action: 'get_lead', lead_id: id }),
+    deleteLead:        (id)                => call({ action: 'delete_lead', lead_id: id }),
+    exportLeadsCSV:    (params)            => call({ action: 'export_leads_csv', ...params }),
+    leadsFilterOptions:()                  => call({ action: 'leads_filter_options' }),
+    getAnalytics:      (id, params)        => call({ action: 'quiz_analytics', quiz_id: id, ...params }),
+    getProfile:        ()                  => call({ action: 'get_profile' }),
+    updateProfile:     (data)              => call({ action: 'update_profile', ...data }),
+    setApiUrl:         (url)               => { localStorage.setItem('qf_api_url', url); location.reload(); },
+    getApiUrl:         ()                  => BASE_URL,
+    isConfigured:      ()                  => true
   };
 })();
