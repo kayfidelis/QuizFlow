@@ -514,11 +514,11 @@ async function saveQuiz() {
       texto: p.texto, opcoes: p.opcoes||[], obrigatoria: true }]
   }));
 
+  // Payload SEM premium_data (para não estourar a URL)
   const payload = {
     nome:      generatedQuiz.nome || generatedQuiz.titulo_boas_vindas || 'Quiz IA',
     titulo:    generatedQuiz.titulo_boas_vindas || '',
     subtitulo: generatedQuiz.subtitulo_boas_vindas || '',
-    premium_data: JSON.stringify(generatedQuiz),
     config: JSON.stringify({
       cores: {
         primaria:   d.cor_primaria    || '#1a3d2e',
@@ -530,22 +530,46 @@ async function saveQuiz() {
       fonte: d.fonte_titulo || d.fonte || 'Playfair Display',
       borda_radius: d.borda_radius || '12px',
       mostrar_progresso: true,
-      animacoes: true,
-      premium_data: JSON.stringify(generatedQuiz)
+      animacoes: true
     }),
     pixels: JSON.stringify({}),
     etapas: JSON.stringify(etapasSimples)
   };
 
   try {
+    // Etapa 1: Cria o quiz básico
     const res = await API.createQuiz(payload);
-    if (res?.success) {
-      Toast.success('Quiz salvo!');
-      setTimeout(() => window.location.href = 'editor.html?id=' + res.data.id, 700);
-    } else {
+    if (!res?.success) {
       Toast.error(res?.message || 'Erro ao salvar');
       setLoading(btn, false);
+      return;
     }
+
+    const quizId = res.data.id;
+
+    // Etapa 2: Envia premium_data em chunks de 1500 chars
+    setLoading(btn, true, 'Salvando dados IA...');
+    const premiumStr = JSON.stringify(generatedQuiz);
+    const CHUNK_SIZE = 1500;
+    const BASE = 'https://script.google.com/macros/s/AKfycbxVONM2rNPWjSrJJ0d4RDTmUaJh53k-2IrOG-tromEY6e02GtQdrQ-km1QD51UjTorfhw/exec';
+    const token = localStorage.getItem('qf_token') || '';
+
+    for (let i = 0; i < premiumStr.length; i += CHUNK_SIZE) {
+      const chunk = premiumStr.slice(i, i + CHUNK_SIZE);
+      const isLast = (i + CHUNK_SIZE) >= premiumStr.length;
+      const url = new URL(BASE);
+      url.searchParams.set('action', 'save_premium_chunk');
+      url.searchParams.set('token', token);
+      url.searchParams.set('quiz_id', quizId);
+      url.searchParams.set('chunk', chunk);
+      url.searchParams.set('index', String(i / CHUNK_SIZE));
+      url.searchParams.set('is_last', isLast ? '1' : '0');
+      await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
+    }
+
+    Toast.success('Quiz salvo!');
+    setTimeout(() => window.location.href = 'editor.html?id=' + quizId, 700);
+
   } catch(e) {
     Toast.error('Erro: ' + e.message);
     setLoading(btn, false);
