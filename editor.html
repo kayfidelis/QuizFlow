@@ -1134,14 +1134,15 @@ function markDirty() {
 }
 
 async function saveQuiz() {
+  if (!quiz) { Toast.error('Quiz não carregado'); return; }
   const btn = document.getElementById('btn-save');
   setLoading(btn, true, 'Salvando...');
 
   try {
     const payload = {
       nome: document.getElementById('quiz-name-input').value,
-      config: quiz.config,
-      pixels: quiz.pixels,
+      config: quiz.config || {},
+      pixels: quiz.pixels || {},
       etapas: etapas
     };
 
@@ -1161,16 +1162,24 @@ async function saveQuiz() {
 }
 
 async function publishQuiz() {
+  if (!quiz) { Toast.error('Quiz não carregado ainda'); return; }
+
   // Salva primeiro
   await saveQuiz();
 
-  const res = await API.updateQuiz(QUIZ_ID, { status: 'published' });
-  if (res?.success) {
-    quiz.status = 'published';
-    document.getElementById('status-badge').textContent = 'Publicado';
-    document.getElementById('status-badge').className = 'badge badge-success';
-    Toast.success('Quiz publicado! Gere o código para usar no seu site.');
-    switchEditorTab('code', document.getElementById('tab-code-btn'));
+  try {
+    const res = await API.updateQuiz(QUIZ_ID, { status: 'published' });
+    if (res?.success) {
+      quiz.status = 'published';
+      document.getElementById('status-badge').textContent = 'Publicado';
+      document.getElementById('status-badge').className = 'badge badge-success';
+      Toast.success('Quiz publicado! Gere o código para usar no seu site.');
+      switchEditorTab('code', document.getElementById('tab-code-btn'));
+    } else {
+      Toast.error(res?.message || 'Erro ao publicar');
+    }
+  } catch(e) {
+    Toast.error('Erro: ' + e.message);
   }
 }
 
