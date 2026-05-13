@@ -3,267 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuizFlow — Gerar Quiz com IA</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <title>QuizFlow — Agente IA</title>
   <link rel="stylesheet" href="global.css">
   <style>
-    /* ── Generator specific ── */
-    .gen-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      align-items: start;
-    }
+    .gen-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+    .input-panel { position:sticky; top:calc(var(--topbar-h) + 24px); }
+    .gen-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px; margin-bottom:20px; }
 
-    /* Input panel */
-    .input-panel {
-      position: sticky;
-      top: calc(var(--topbar-h) + 24px);
-    }
+    .style-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+    .style-btn { padding:12px 8px; background:var(--bg-elevated); border:2px solid var(--border); border-radius:var(--radius-md); color:var(--text-secondary); font-family:'IBM Plex Sans',sans-serif; font-size:.75rem; font-weight:600; cursor:pointer; transition:all var(--transition); text-align:center; }
+    .style-btn .si { font-size:1.3rem; display:block; margin-bottom:4px; }
+    .style-btn:hover { border-color:var(--amber); color:var(--text-primary); }
+    .style-btn.active { border-color:var(--amber); background:var(--amber-glow); color:var(--amber); }
 
-    .gen-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
-      padding: 28px;
-    }
+    .btn-generate { width:100%; padding:17px; background:linear-gradient(135deg,var(--amber),var(--coral)); border:none; border-radius:var(--radius-md); color:#07080F; font-family:'Syne',sans-serif; font-size:1rem; font-weight:800; cursor:pointer; transition:all var(--transition); letter-spacing:-.01em; }
+    .btn-generate:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 32px rgba(255,186,0,.35); }
+    .btn-generate:disabled { opacity:.45; cursor:not-allowed; transform:none; }
 
-    .gen-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.4rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 6px;
-    }
+    /* Overlay do agente */
+    .agent-overlay { position:fixed; inset:0; background:rgba(7,8,15,.95); z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px; backdrop-filter:blur(16px); }
+    .agent-title { font-family:'Syne',sans-serif; font-size:1.25rem; font-weight:800; color:var(--text-primary); }
+    .agent-sub { font-size:.82rem; color:var(--text-muted); margin-top:-20px; }
 
-    .gen-subtitle {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-bottom: 28px;
-    }
+    .agent-steps { display:flex; flex-direction:column; gap:12px; width:420px; }
+    .agent-step { display:flex; align-items:center; gap:16px; padding:16px 20px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-lg); transition:all .4s ease; }
+    .agent-step.active { border-color:var(--amber); background:var(--amber-glow); }
+    .agent-step.done  { border-color:var(--green); background:rgba(46,204,135,.08); }
+    .agent-step.wait  { opacity:.4; }
 
-    /* Estilo selector */
-    .style-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 20px;
-    }
+    .step-icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; background:var(--bg-elevated); border:1px solid var(--border); transition:all .3s; }
+    .agent-step.active .step-icon { background:var(--amber); border-color:var(--amber); animation:pulsar 1.4s infinite; }
+    .agent-step.done  .step-icon { background:var(--green); border-color:var(--green); }
+    @keyframes pulsar { 0%,100%{box-shadow:0 0 0 0 rgba(255,186,0,.4)} 50%{box-shadow:0 0 0 8px rgba(255,186,0,0)} }
 
-    .style-btn {
-      padding: 12px 8px;
-      background: var(--bg-elevated);
-      border: 2px solid var(--border);
-      border-radius: var(--radius-md);
-      color: var(--text-secondary);
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all var(--transition);
-      text-align: center;
-    }
+    .step-info { flex:1; }
+    .step-name { font-size:.875rem; font-weight:700; color:var(--text-primary); }
+    .step-desc { font-size:.75rem; color:var(--text-muted); margin-top:2px; }
+    .step-st { font-size:.72rem; font-weight:600; }
+    .agent-step.active .step-st { color:var(--amber); }
+    .agent-step.done   .step-st { color:var(--green); }
+    .agent-step.wait   .step-st { color:var(--text-muted); }
 
-    .style-btn .style-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
-    .style-btn:hover { border-color: var(--amber); color: var(--text-primary); }
-    .style-btn.active {
-      border-color: var(--amber);
-      background: var(--amber-glow);
-      color: var(--amber);
-    }
+    .agent-timer { font-size:.72rem; color:rgba(255,255,255,.35); }
 
-    .btn-generate {
-      width: 100%;
-      padding: 15px;
-      background: linear-gradient(135deg, var(--amber) 0%, var(--coral) 100%);
-      border: none;
-      border-radius: var(--radius-md);
-      color: #07080F;
-      font-family: 'Syne', sans-serif;
-      font-size: 1rem;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all var(--transition);
-      letter-spacing: -0.01em;
-      position: relative;
-      overflow: hidden;
-    }
+    /* Preview */
+    .success-banner { background:rgba(46,204,135,.1); border:1px solid rgba(46,204,135,.25); border-radius:var(--radius-lg); padding:18px 22px; display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+    .palette-display { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .palette-chip { width:26px; height:26px; border-radius:50%; border:2px solid rgba(255,255,255,.12); }
 
-    .btn-generate:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(255,186,0,0.35);
-    }
+    .quiz-preview-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-xl); overflow:hidden; margin-bottom:16px; }
+    .preview-progress { height:4px; background:rgba(0,0,0,.1); }
+    .preview-progress-bar { height:100%; border-radius:2px; transition:width .5s ease; }
+    .quiz-step-preview { padding:28px 24px; min-height:200px; }
 
-    .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .step-nav-wrap { display:flex; gap:6px; align-items:center; padding:10px 0 14px; justify-content:center; }
+    .sdot { width:8px; height:8px; border-radius:50%; background:var(--border); cursor:pointer; transition:all var(--transition); border:none; }
+    .sdot.active { background:var(--amber); width:20px; border-radius:4px; }
 
-    /* Preview panel */
-    .preview-panel { display: flex; flex-direction: column; gap: 20px; }
+    .etapas-list { display:flex; flex-direction:column; gap:8px; }
+    .etapa-row { display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--bg-elevated); border-radius:var(--radius-md); cursor:pointer; transition:background var(--transition); }
+    .etapa-row:hover { background:var(--bg-hover); }
 
-    /* Loading state */
-    .generating-overlay {
-      position: fixed; inset: 0;
-      background: rgba(7,8,15,0.9);
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      backdrop-filter: blur(12px);
-    }
+    /* Campos fotos */
+    .fotos-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .foto-input-wrap { display:flex; flex-direction:column; gap:4px; }
+    .foto-preview-img { width:100%; height:80px; object-fit:cover; border-radius:var(--radius-sm); border:1px solid var(--border); display:none; }
 
-    .gen-spinner {
-      width: 64px; height: 64px;
-      border: 3px solid rgba(255,186,0,0.2);
-      border-top-color: var(--amber);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    .gen-status {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      text-align: center;
-    }
-
-    .gen-status-sub {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      text-align: center;
-    }
-
-    /* Quiz preview card */
-    .quiz-preview-wrap {
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
-    }
-
-    .quiz-step-preview {
-      padding: 32px 28px;
-      font-family: sans-serif;
-      min-height: 200px;
-    }
-
-    .preview-progress {
-      height: 4px;
-      background: rgba(0,0,0,0.1);
-    }
-
-    .preview-progress-bar {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.5s ease;
-    }
-
-    /* Design palette display */
-    .palette-display {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-    }
-
-    .palette-chip {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.1);
-      position: relative;
-      cursor: default;
-    }
-
-    .palette-chip:hover::after {
-      content: attr(title);
-      position: absolute;
-      bottom: 110%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--bg-elevated);
-      color: var(--text-primary);
-      font-size: 0.7rem;
-      padding: 3px 8px;
-      border-radius: 4px;
-      white-space: nowrap;
-      border: 1px solid var(--border);
-    }
-
-    /* Step navigator */
-    .step-nav {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      margin-top: 12px;
-      justify-content: center;
-    }
-
-    .step-dot-nav {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--border);
-      cursor: pointer;
-      transition: all var(--transition);
-      border: none;
-    }
-
-    .step-dot-nav.active {
-      background: var(--amber);
-      width: 20px;
-      border-radius: 4px;
-    }
-
-    /* Design tags */
-    .design-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 12px;
-    }
-
-    .design-tag {
-      padding: 4px 10px;
-      border-radius: 100px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-    }
-
-    /* Success state */
-    .success-banner {
-      background: rgba(46,204,135,0.1);
-      border: 1px solid rgba(46,204,135,0.25);
-      border-radius: var(--radius-lg);
-      padding: 20px 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .success-icon { font-size: 2rem; }
-
-    @media (max-width: 900px) {
-      .gen-layout { grid-template-columns: 1fr; }
-      .input-panel { position: static; }
-      .style-grid { grid-template-columns: repeat(3, 1fr); }
-    }
+    @media (max-width:900px) { .gen-layout { grid-template-columns:1fr; } .input-panel { position:static; } }
   </style>
 </head>
 <body>
 <div class="app-layout">
-  <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">⚡</div>QuizFlow</div></div>
     <nav class="sidebar-nav">
       <a href="dashboard.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a>
       <a href="quizzes.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Meus Quizzes</a>
-      <a href="leads.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Leads</a>
+      <a href="leads.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Leads</a>
       <a href="analytics.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
       <div class="nav-section-label">Ferramentas</div>
       <a href="quiz-generator.html" class="nav-link active">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        Gerar com IA
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Agente IA
       </a>
       <div class="nav-section-label">Configurações</div>
       <a href="settings.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Configurações</a>
@@ -280,93 +100,101 @@
     <header class="page-header">
       <div style="display:flex;align-items:center;gap:12px;">
         <button class="sidebar-toggle" id="sidebar-toggle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
-        <span class="page-title">✨ Gerar Quiz com IA</span>
+        <span class="page-title">🤖 Agente de Quiz IA</span>
       </div>
+      <span class="badge badge-violet" style="font-size:.72rem;">Premium — Design único por nicho</span>
     </header>
 
     <div class="page-body">
       <div class="gen-layout">
 
-        <!-- Input Panel -->
+        <!-- Input -->
         <div class="input-panel">
           <div class="gen-card">
-            <div class="gen-title">Descreva seu quiz</div>
-            <div class="gen-subtitle">A IA cria as perguntas, opções e um design exclusivo</div>
+            <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;letter-spacing:-.03em;margin-bottom:4px;">Descreva seu quiz</div>
+            <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:24px;">O agente cria tudo — perguntas, copy, 3 resultados e design exclusivo (~45 segundos)</div>
 
             <div class="form-group">
-              <label class="form-label">Proposta do quiz</label>
+              <label class="form-label">Proposta do quiz <span style="color:var(--red)">*</span></label>
               <textarea id="quiz-proposta" class="form-input" rows="4"
-                placeholder="Ex: Quiz para qualificar leads de uma mentoria de finanças pessoais para jovens de 20-30 anos que querem sair das dívidas e começar a investir..."></textarea>
+                placeholder="Ex: Quiz para qualificar leads de mentoria de emagrecimento para mulheres de 40-60 anos que já tentaram várias dietas sem resultado duradouro..."></textarea>
             </div>
-
             <div class="form-group">
               <label class="form-label">Nicho / mercado</label>
-              <input type="text" id="quiz-nicho" class="form-input" placeholder="Ex: Finanças pessoais, Emagrecimento, Marketing digital...">
+              <input type="text" id="quiz-nicho" class="form-input" placeholder="Ex: Emagrecimento, Finanças pessoais...">
             </div>
-
             <div class="form-group">
               <label class="form-label">Público-alvo</label>
-              <input type="text" id="quiz-publico" class="form-input" placeholder="Ex: Jovens de 20-35 anos, Mães de primeira viagem...">
+              <input type="text" id="quiz-publico" class="form-input" placeholder="Ex: Mulheres 40-60 anos, Empreendedores...">
             </div>
-
             <div class="form-group">
-              <label class="form-label">Objetivo do quiz</label>
+              <label class="form-label">Objetivo</label>
               <select id="quiz-objetivo" class="form-select">
                 <option value="qualificacao">Qualificar leads para oferta</option>
                 <option value="diagnostico">Diagnóstico personalizado</option>
                 <option value="engajamento">Engajamento e awareness</option>
                 <option value="segmentacao">Segmentar audiência</option>
-                <option value="curiosidade">Despertar curiosidade</option>
               </select>
             </div>
-
             <div class="form-group">
               <label class="form-label">Estilo visual</label>
               <div class="style-grid">
-                <button class="style-btn active" data-style="moderno" onclick="selectStyle(this)">
-                  <span class="style-icon">🎯</span>Moderno
-                </button>
-                <button class="style-btn" data-style="elegante" onclick="selectStyle(this)">
-                  <span class="style-icon">💎</span>Elegante
-                </button>
-                <button class="style-btn" data-style="energetico" onclick="selectStyle(this)">
-                  <span class="style-icon">⚡</span>Enérgico
-                </button>
-                <button class="style-btn" data-style="minimalista" onclick="selectStyle(this)">
-                  <span class="style-icon">◻️</span>Minimal
-                </button>
-                <button class="style-btn" data-style="divertido" onclick="selectStyle(this)">
-                  <span class="style-icon">🎨</span>Divertido
-                </button>
-                <button class="style-btn" data-style="profissional" onclick="selectStyle(this)">
-                  <span class="style-icon">💼</span>Corporativo
-                </button>
+                <button class="style-btn" data-style="moderno"      onclick="selStyle(this)"><span class="si">🎯</span>Moderno</button>
+                <button class="style-btn active" data-style="elegante"    onclick="selStyle(this)"><span class="si">💎</span>Elegante</button>
+                <button class="style-btn" data-style="energetico"   onclick="selStyle(this)"><span class="si">⚡</span>Enérgico</button>
+                <button class="style-btn" data-style="minimalista"  onclick="selStyle(this)"><span class="si">◻️</span>Minimal</button>
+                <button class="style-btn" data-style="divertido"    onclick="selStyle(this)"><span class="si">🎨</span>Divertido</button>
+                <button class="style-btn" data-style="profissional" onclick="selStyle(this)"><span class="si">💼</span>Corporativo</button>
               </div>
             </div>
-
             <div class="form-group">
-              <label class="form-label">Número de etapas</label>
+              <label class="form-label">Perguntas de diagnóstico</label>
               <div style="display:flex;align-items:center;gap:12px;">
-                <input type="range" id="num-etapas" min="3" max="8" value="5" style="flex:1;"
+                <input type="range" id="num-etapas" min="3" max="7" value="5" style="flex:1;"
                   oninput="document.getElementById('etapas-val').textContent=this.value">
-                <span id="etapas-val" style="font-family:'Syne',sans-serif;font-weight:700;color:var(--amber);min-width:24px;">5</span>
+                <span id="etapas-val" style="font-family:'Syne',sans-serif;font-weight:700;color:var(--amber);min-width:20px;">5</span>
               </div>
-              <small style="font-size:0.72rem;color:var(--text-muted);">etapas de perguntas + 1 captura de lead</small>
+              <small style="font-size:.72rem;color:var(--text-muted);">+ captura de lead + 3 páginas de resultado</small>
             </div>
 
-            <button class="btn-generate" id="btn-generate" onclick="generateQuiz()">
-              ✨ Gerar Quiz com IA
+            <!-- Fotos (opcional) -->
+            <details style="margin-bottom:20px;">
+              <summary style="font-size:.78rem;font-weight:700;color:var(--text-secondary);cursor:pointer;padding:8px 0;border-top:1px solid var(--border);">
+                📸 Adicionar fotos (opcional)
+              </summary>
+              <div style="padding-top:12px;">
+                <div class="form-group">
+                  <label class="form-label">Fotos da Expert / Marca (URLs)</label>
+                  <input type="url" id="foto-expert-1" class="form-input" placeholder="https://..." style="margin-bottom:6px;" oninput="previewFoto(this,'pv1')">
+                  <input type="url" id="foto-expert-2" class="form-input" placeholder="https://..." style="margin-bottom:6px;" oninput="previewFoto(this,'pv2')">
+                  <input type="url" id="foto-expert-3" class="form-input" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Fotos de Prova Social (URLs)</label>
+                  <input type="url" id="foto-ps-1" class="form-input" placeholder="https://..." style="margin-bottom:6px;">
+                  <input type="url" id="foto-ps-2" class="form-input" placeholder="https://..." style="margin-bottom:6px;">
+                  <input type="url" id="foto-ps-3" class="form-input" placeholder="https://..." style="margin-bottom:6px;">
+                  <input type="url" id="foto-ps-4" class="form-input" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">URL do WhatsApp / CTA</label>
+                  <input type="url" id="url-cta" class="form-input" placeholder="https://wa.me/55119999...">
+                </div>
+              </div>
+            </details>
+
+            <button class="btn-generate" id="btn-generate" onclick="startAgent()">
+              🤖 Gerar Quiz com IA
             </button>
           </div>
         </div>
 
-        <!-- Preview Panel -->
-        <div class="preview-panel" id="preview-panel">
-          <!-- Estado vazio -->
-          <div class="gen-card" id="empty-state" style="text-align:center;padding:64px 32px;">
-            <div style="font-size:4rem;margin-bottom:16px;opacity:0.4;">🤖</div>
-            <h3 style="font-size:1rem;margin-bottom:8px;">Seu quiz aparecerá aqui</h3>
-            <p style="font-size:0.82rem;color:var(--text-muted);">Preencha a proposta e clique em gerar</p>
+        <!-- Preview -->
+        <div id="preview-panel">
+          <div class="gen-card" style="text-align:center;padding:64px 32px;">
+            <div style="font-size:4rem;margin-bottom:16px;opacity:.25;">🤖</div>
+            <h3 style="font-size:1rem;margin-bottom:8px;">Aguardando geração</h3>
+            <p style="font-size:.82rem;color:var(--text-muted);">Preencha a proposta e clique em gerar</p>
           </div>
         </div>
 
@@ -375,11 +203,30 @@
   </main>
 </div>
 
-<!-- Loading overlay -->
-<div class="generating-overlay" id="gen-overlay" style="display:none;">
-  <div class="gen-spinner"></div>
-  <div class="gen-status" id="gen-status-text">Analisando sua proposta...</div>
-  <div class="gen-status-sub" id="gen-status-sub">A IA está criando perguntas e o design exclusivo</div>
+<!-- Overlay do agente -->
+<div class="agent-overlay" id="agent-overlay" style="display:none;">
+  <div class="agent-title">🤖 Agente trabalhando...</div>
+  <div class="agent-sub">Não feche esta janela</div>
+
+  <div class="agent-steps">
+    <div class="agent-step wait" id="ast-1">
+      <div class="step-icon" id="asi-1">✍️</div>
+      <div class="step-info">
+        <div class="step-name">Criando quiz completo</div>
+        <div class="step-desc">Estratégia, copy, perguntas, 3 resultados e design</div>
+      </div>
+      <span class="step-st" id="ass-1">Aguardando</span>
+    </div>
+    <div class="agent-step wait" id="ast-2">
+      <div class="step-icon" id="asi-2">🔬</div>
+      <div class="step-info">
+        <div class="step-name">Refinando para conversão máxima</div>
+        <div class="step-desc">Revisão crítica de copy, urgência e design</div>
+      </div>
+      <span class="step-st" id="ass-2">Aguardando</span>
+    </div>
+  </div>
+  <div class="agent-timer" id="agent-timer">⏱ ~45 segundos</div>
 </div>
 
 <script src="api.js"></script>
@@ -388,407 +235,319 @@
 <script>
 if (!Auth.requireAuth()) throw '';
 initSidebar();
-
 const user = Auth.getUser();
 if (user) {
-  const initials = (user.nome||'U').split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
-  document.getElementById('user-avatar-initials').textContent = initials;
+  const ini = (user.nome||'U').split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('user-avatar-initials').textContent = ini;
 }
 
-let selectedStyle = 'moderno';
+let selectedStyle = 'elegante';
 let generatedQuiz = null;
-let previewStepIndex = 0;
+let previewStep = 0;
+let timerInterval = null;
 
-function selectStyle(btn) {
+function selStyle(btn) {
   document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedStyle = btn.dataset.style;
 }
 
-const statusMessages = [
-  ['Analisando sua proposta...', 'Entendendo o nicho e público-alvo'],
-  ['Criando as perguntas...', 'Escrevendo perguntas envolventes e opções irresistíveis'],
-  ['Desenhando a identidade visual...', 'Gerando paleta de cores, fontes e estilo únicos'],
-  ['Montando o funil...', 'Estruturando etapas para máxima conversão'],
-  ['Finalizando detalhes...', 'Revisando copy e otimizando para conversão'],
-];
-
-let statusInterval;
-
-function startStatusCycle() {
-  let i = 0;
-  const s = document.getElementById('gen-status-text');
-  const sub = document.getElementById('gen-status-sub');
-  s.textContent = statusMessages[0][0];
-  sub.textContent = statusMessages[0][1];
-  statusInterval = setInterval(() => {
-    i = (i + 1) % statusMessages.length;
-    s.style.opacity = 0;
-    setTimeout(() => {
-      s.textContent = statusMessages[i][0];
-      sub.textContent = statusMessages[i][1];
-      s.style.opacity = 1;
-    }, 300);
-  }, 2200);
+function setStep(n, state) {
+  const el  = document.getElementById('ast-' + n);
+  const ico = document.getElementById('asi-' + n);
+  const st  = document.getElementById('ass-' + n);
+  el.className = 'agent-step ' + (state === 'active' ? 'active' : state === 'done' ? 'done' : 'wait');
+  st.textContent = state === 'active' ? 'Processando...' : state === 'done' ? '✓ Concluído' : 'Aguardando';
+  if (state === 'done') ico.textContent = '✅';
 }
 
-function stopStatusCycle() {
-  clearInterval(statusInterval);
+function startTimer() {
+  let secs = 0;
+  const el = document.getElementById('agent-timer');
+  timerInterval = setInterval(() => {
+    secs++;
+    const m = Math.floor(secs/60);
+    const s = secs % 60;
+    el.textContent = `⏱ ${m > 0 ? m+'m ' : ''}${s}s`;
+  }, 1000);
 }
 
-async function generateQuiz() {
+function stopTimer() {
+  clearInterval(timerInterval);
+}
+
+async function startAgent() {
   const proposta = document.getElementById('quiz-proposta').value.trim();
-  const nicho = document.getElementById('quiz-nicho').value.trim();
-  const publico = document.getElementById('quiz-publico').value.trim();
-  const objetivo = document.getElementById('quiz-objetivo').value;
-  const numEtapas = document.getElementById('num-etapas').value;
-
   if (!proposta) { Toast.warning('Descreva a proposta do quiz'); return; }
 
-  // Mostra loading
-  document.getElementById('gen-overlay').style.display = 'flex';
+  // Coleta fotos
+  const fotosExpert = [
+    document.getElementById('foto-expert-1').value.trim(),
+    document.getElementById('foto-expert-2').value.trim(),
+    document.getElementById('foto-expert-3').value.trim()
+  ].filter(Boolean);
+
+  const fotosPS = [
+    document.getElementById('foto-ps-1').value.trim(),
+    document.getElementById('foto-ps-2').value.trim(),
+    document.getElementById('foto-ps-3').value.trim(),
+    document.getElementById('foto-ps-4').value.trim()
+  ].filter(Boolean);
+
+  const urlCTA = document.getElementById('url-cta').value.trim();
+
+  // Abre overlay
   document.getElementById('btn-generate').disabled = true;
-  startStatusCycle();
+  document.getElementById('agent-overlay').style.display = 'flex';
+  setStep(1, 'active');
+  setStep(2, 'wait');
+  startTimer();
+
+  // Troca para step 2 após 25s
+  const t1 = setTimeout(() => { setStep(1, 'done'); setStep(2, 'active'); }, 25000);
+
+  // Timeout de segurança 3 min
+  const tTimeout = setTimeout(() => {
+    clearTimeout(t1);
+    stopTimer();
+    document.getElementById('agent-overlay').style.display = 'none';
+    document.getElementById('btn-generate').disabled = false;
+    Toast.error('Tempo limite atingido. Tente novamente com uma proposta mais curta.');
+  }, 180000);
 
   try {
-    const params = { proposta, nicho, publico, objetivo, num_etapas: numEtapas, estilo: selectedStyle };
-    const quizData = await callClaude(params);
+    const BASE = 'https://script.google.com/macros/s/AKfycbxVONM2rNPWjSrJJ0d4RDTmUaJh53k-2IrOG-tromEY6e02GtQdrQ-km1QD51UjTorfhw/exec';
+    const url = new URL(BASE);
+    url.searchParams.set('action', 'generate_quiz_ai');
+    url.searchParams.set('token', localStorage.getItem('qf_token') || '');
+    url.searchParams.set('proposta', proposta);
+    url.searchParams.set('nicho',    document.getElementById('quiz-nicho').value.trim());
+    url.searchParams.set('publico',  document.getElementById('quiz-publico').value.trim());
+    url.searchParams.set('objetivo', document.getElementById('quiz-objetivo').value);
+    url.searchParams.set('num_etapas', document.getElementById('num-etapas').value);
+    url.searchParams.set('estilo',   selectedStyle);
 
-    stopStatusCycle();
-    document.getElementById('gen-overlay').style.display = 'none';
+    const res = await fetch(url.toString(), { method: 'GET', redirect: 'follow' }).then(r => r.json());
+
+    clearTimeout(t1);
+    clearTimeout(tTimeout);
+    stopTimer();
+
+    if (!res?.success) {
+      document.getElementById('agent-overlay').style.display = 'none';
+      document.getElementById('btn-generate').disabled = false;
+      Toast.error(res?.message || 'Erro ao gerar. Tente novamente.');
+      return;
+    }
+
+    setStep(1, 'done');
+    setStep(2, 'done');
+
+    // Injeta fotos e URL CTA no objeto gerado
+    const quizData = res.data;
+    if (fotosExpert.length) quizData.fotos_expert = fotosExpert;
+    if (fotosPS.length) quizData.fotos_prova_social = fotosPS;
+    if (urlCTA) quizData.url_cta = urlCTA;
+
+    await new Promise(r => setTimeout(r, 600));
+    document.getElementById('agent-overlay').style.display = 'none';
     document.getElementById('btn-generate').disabled = false;
 
     generatedQuiz = quizData;
     renderPreview(quizData);
     Toast.success('Quiz gerado com sucesso!');
 
-  } catch(e) {
-    stopStatusCycle();
-    document.getElementById('gen-overlay').style.display = 'none';
+  } catch(err) {
+    clearTimeout(t1);
+    clearTimeout(tTimeout);
+    stopTimer();
+    document.getElementById('agent-overlay').style.display = 'none';
     document.getElementById('btn-generate').disabled = false;
-    Toast.error('Erro ao gerar: ' + e.message);
+    Toast.error('Erro: ' + err.message);
   }
 }
 
-function buildPrompt({ proposta, nicho, publico, objetivo, numEtapas, estilo }) {
-  const estiloMap = {
-    moderno:      'moderno e tecnológico, cores vibrantes como azul elétrico ou verde neon, fontes geométricas',
-    elegante:     'elegante e sofisticado, tons de dourado, creme e preto, fontes serifadas refinadas',
-    energetico:   'energético e impactante, laranja forte, vermelho ou amarelo elétrico, fontes bold expressivas',
-    minimalista:  'minimalista e limpo, preto e branco com um único acento colorido, muito espaço em branco',
-    divertido:    'divertido e colorido, cores candy pop como rosa chiclete e roxo, fontes arredondadas e brincalhonas',
-    profissional: 'corporativo e sério, azul marinho e cinza, fontes clássicas e limpas'
-  };
-
-  return `Você é um especialista em criação de quizzes de alto desempenho para marketing digital.
-
-Crie um quiz completo com base nas informações abaixo:
-
-PROPOSTA: ${proposta}
-NICHO: ${nicho || 'não especificado'}
-PÚBLICO-ALVO: ${publico || 'não especificado'}
-OBJETIVO: ${objetivo}
-NÚMERO DE ETAPAS DE PERGUNTAS: ${numEtapas}
-ESTILO VISUAL: ${estiloMap[estilo] || estilo}
-
-INSTRUÇÕES:
-- Crie ${numEtapas} etapas de perguntas + 1 etapa de captura de lead no final
-- Cada etapa deve ter 1 pergunta do tipo multipla_escolha com 4 opções e emojis relevantes
-- As perguntas devem ser envolventes, gerar curiosidade e qualificar o lead
-- A última etapa ANTES da captura deve criar antecipação ("Você está quase lá!")
-- A etapa de captura deve ter 3 campos: captura_nome, captura_email, captura_whatsapp
-- Crie um design visual ÚNICO e específico para esse nicho (não genérico)
-- O design deve ter cores, fonte e estilo que ressoem com o público-alvo
-
-Responda SOMENTE com JSON válido neste formato exato:
-{
-  "nome": "Nome interno do quiz",
-  "titulo": "Título principal exibido no quiz (impactante, máx 60 chars)",
-  "subtitulo": "Subtítulo que complementa o título (máx 80 chars)",
-  "design": {
-    "cor_primaria": "#hexcode",
-    "cor_secundaria": "#hexcode",
-    "cor_fundo": "#hexcode",
-    "cor_texto": "#hexcode",
-    "cor_botao_texto": "#hexcode",
-    "fonte": "Nome da Google Font",
-    "borda_radius": "12px",
-    "estilo_nome": "Nome descritivo do estilo visual criado",
-    "dark_mode": false,
-    "descricao_design": "Descrição em 1 frase do conceito visual"
-  },
-  "pagina_final": {
-    "titulo": "Título da página de obrigado",
-    "subtitulo": "Mensagem de conclusão personalizada",
-    "botao_texto": "Texto do botão de CTA"
-  },
-  "etapas": [
-    {
-      "titulo": "Título da etapa",
-      "descricao": "Subtítulo opcional da etapa",
-      "tipo": "pergunta",
-      "perguntas": [
-        {
-          "tipo": "multipla_escolha",
-          "texto": "Texto da pergunta?",
-          "opcoes": [
-            { "id": "1", "texto": "Opção A", "icone": "emoji" },
-            { "id": "2", "texto": "Opção B", "icone": "emoji" },
-            { "id": "3", "texto": "Opção C", "icone": "emoji" },
-            { "id": "4", "texto": "Opção D", "icone": "emoji" }
-          ]
-        }
-      ]
-    }
-  ]
-}
-
-A última etapa do array deve ser do tipo "captura" com as 3 perguntas de captura.`;
-}
-
-async function callClaude(params) {
-  // Chama o Apps Script que faz a requisição server-side para a Claude API
-  const res = await API.call ? 
-    await fetch(API.getApiUrl() + '?action=generate_quiz_ai&token=' + (localStorage.getItem('qf_token')||'') + '&' + new URLSearchParams(params)).then(r => r.json()) :
-    await fetch('https://script.google.com/macros/s/AKfycbxVONM2rNPWjSrJJ0d4RDTmUaJh53k-2IrOG-tromEY6e02GtQdrQ-km1QD51UjTorfhw/exec?action=generate_quiz_ai&token=' + (localStorage.getItem('qf_token')||'') + '&' + new URLSearchParams(params)).then(r => r.json());
-
-  if (!res.success) throw new Error(res.message || 'Erro na geração');
-  return res.data;
-}
-
-function parseResponse(data) {
-  return data; // já vem parseado do backend
-}
-
 function renderPreview(quiz) {
-  previewStepIndex = 0;
+  previewStep = 0;
+  const d = quiz.design || {};
+  const perguntas = quiz.perguntas || [];
   const panel = document.getElementById('preview-panel');
-  const design = quiz.design || {};
-  const etapas = quiz.etapas || [];
 
   panel.innerHTML = `
-    <!-- Success banner -->
     <div class="success-banner">
-      <div class="success-icon">✅</div>
-      <div>
-        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;margin-bottom:2px;">Quiz gerado!</div>
-        <div style="font-size:0.8rem;color:var(--text-secondary);">${etapas.length} etapas · Design: ${design.estilo_nome || 'Único'}</div>
+      <div style="font-size:2rem;">✅</div>
+      <div style="flex:1;">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;">${quiz.nome || quiz.titulo_boas_vindas || 'Quiz gerado'}</div>
+        <div style="font-size:.78rem;color:var(--text-secondary);">${perguntas.length} perguntas · 3 resultados · ${d.estilo_nome || 'Design único'}</div>
       </div>
-      <button class="btn btn-primary btn-sm" style="margin-left:auto;" id="btn-save-quiz" onclick="saveQuiz()">
-        Salvar e Editar →
-      </button>
+      <button class="btn btn-primary btn-sm" id="btn-save-quiz" onclick="saveQuiz()">Salvar e Editar →</button>
     </div>
 
-    <!-- Design card -->
     <div class="gen-card">
-      <div class="card-header">
-        <span class="card-title">Design Exclusivo</span>
-        <span class="badge badge-success">IA Generated</span>
-      </div>
-      <div style="font-size:0.875rem;font-weight:600;color:var(--text-primary);margin-bottom:4px;">${design.estilo_nome || ''}</div>
-      <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;">${design.descricao_design || ''}</div>
-
+      <div class="card-header"><span class="card-title">Design gerado</span><span class="badge badge-violet">IA</span></div>
+      <div style="font-size:.875rem;font-weight:700;color:var(--text-primary);margin-bottom:4px;">${d.estilo_nome || ''}</div>
+      <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:12px;">${d.descricao_design || ''}</div>
       <div class="palette-display">
-        ${[
-          { cor: design.cor_primaria, label: 'Primária' },
-          { cor: design.cor_secundaria, label: 'Secundária' },
-          { cor: design.cor_fundo, label: 'Fundo' },
-          { cor: design.cor_texto, label: 'Texto' }
-        ].filter(c => c.cor).map(c => `
-          <div class="palette-chip" style="background:${c.cor};" title="${c.label}: ${c.cor}"></div>
-        `).join('')}
-        <span style="font-size:0.78rem;color:var(--text-muted);line-height:32px;margin-left:4px;">
-          ${design.fonte || 'Inter'} · ${design.borda_radius || '12px'}
-        </span>
+        ${[d.cor_primaria,d.cor_secundaria,d.cor_fundo,d.cor_texto].filter(Boolean).map(c=>
+          `<div class="palette-chip" style="background:${c};" title="${c}"></div>`
+        ).join('')}
+        <span style="font-size:.75rem;color:var(--text-muted);line-height:26px;margin-left:4px;">${d.fonte_titulo||d.fonte||'Inter'} · ${d.borda_radius||'12px'}</span>
       </div>
-
-      <div class="design-tags" id="design-tags-wrap"></div>
     </div>
 
-    <!-- Quiz preview -->
-    <div class="gen-card" style="padding:0;overflow:hidden;">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-        <span class="card-title">Preview</span>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-ghost btn-sm" onclick="prevStep()" id="btn-prev">← Anterior</button>
-          <span style="font-size:0.78rem;color:var(--text-muted);line-height:32px;" id="step-counter">Etapa 1 / ${etapas.length}</span>
-          <button class="btn btn-ghost btn-sm" onclick="nextStep()" id="btn-next">Próxima →</button>
+    <div class="quiz-preview-card">
+      <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <span class="card-title">Preview das Perguntas</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-ghost btn-sm" onclick="prevStep()">←</button>
+          <span style="font-size:.72rem;color:var(--text-muted);" id="step-counter">1 / ${perguntas.length}</span>
+          <button class="btn btn-ghost btn-sm" onclick="nextStep()">→</button>
         </div>
       </div>
-
-      <!-- Barra de progresso -->
       <div class="preview-progress">
-        <div class="preview-progress-bar" id="preview-prog" style="width:${Math.round(1/etapas.length*100)}%;background:linear-gradient(90deg,${design.cor_primaria||'#6366F1'},${design.cor_secundaria||'#8B5CF6'});"></div>
+        <div class="preview-progress-bar" id="preview-prog" style="width:${Math.round(1/Math.max(perguntas.length,1)*100)}%;background:linear-gradient(90deg,${d.cor_primaria||'#6366F1'},${d.cor_secundaria||'#8B5CF6'});"></div>
       </div>
-
-      <div class="quiz-step-preview" id="quiz-step-preview"
-        style="background:${design.cor_fundo||'#fff'};color:${design.cor_texto||'#1F2937'};">
-      </div>
-
-      <div class="step-nav" id="step-nav-dots" style="padding:12px 0 16px;"></div>
+      <div class="quiz-step-preview" id="quiz-step-preview" style="background:${d.cor_fundo||'#fff'};color:${d.cor_texto||'#1f2937'};"></div>
+      <div class="step-nav-wrap" id="step-nav"></div>
     </div>
 
-    <!-- Etapas list -->
     <div class="gen-card">
-      <div class="card-header">
-        <span class="card-title">Estrutura do Quiz</span>
-        <span style="font-size:0.75rem;color:var(--text-muted);">${etapas.length} etapas</span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        ${etapas.map((e,i) => `
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg-elevated);border-radius:var(--radius-md);cursor:pointer;transition:background var(--transition);" onclick="jumpToStep(${i})" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='var(--bg-elevated)'">
-            <div style="width:24px;height:24px;border-radius:6px;background:${e.tipo==='captura'?'rgba(46,204,135,0.2)':'var(--amber-glow)'};display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:${e.tipo==='captura'?'var(--green)':'var(--amber)'};flex-shrink:0;">${i+1}</div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:0.82rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.titulo||'Etapa '+(i+1)}</div>
-              <div style="font-size:0.72rem;color:var(--text-muted);">${e.tipo==='captura'?'📧 Captura de lead':'❓ '+((e.perguntas||[])[0]?.texto||'Pergunta').substring(0,50)+'...'}</div>
-            </div>
-            <span class="badge ${e.tipo==='captura'?'badge-success':'badge-muted'}">${e.tipo==='captura'?'Lead':'Pergunta'}</span>
+      <div class="card-header"><span class="card-title">Estrutura Completa</span></div>
+      <div class="etapas-list">
+        <div class="etapa-row" onclick="jumpTo(-1)">
+          <div style="width:24px;height:24px;border-radius:6px;background:var(--amber-glow);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--amber);">★</div>
+          <div style="flex:1;"><div style="font-size:.82rem;font-weight:600;color:var(--text-primary);">Boas-vindas + Captura</div><div style="font-size:.7rem;color:var(--text-muted);">Headline · Credibilidade · Nome e WhatsApp</div></div>
+          <span class="badge badge-warning">Lead</span>
+        </div>
+        ${perguntas.map((p,i)=>`
+          <div class="etapa-row" onclick="jumpTo(${i})">
+            <div style="width:24px;height:24px;border-radius:6px;background:var(--bg-hover);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--text-muted);">${i+1}</div>
+            <div style="flex:1;min-width:0;"><div style="font-size:.82rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.texto||'Pergunta '+(i+1)}</div><div style="font-size:.7rem;color:var(--text-muted);">${(p.opcoes||[]).length} opções · pontos: ${(p.pontos_opcoes||[]).join('/')}</div></div>
+            <span class="badge badge-muted">Pergunta</span>
           </div>
         `).join('')}
+        <div class="etapa-row" style="background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.15);">
+          <div style="width:24px;height:24px;border-radius:6px;background:rgba(192,57,43,.15);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#c0392b;">!</div>
+          <div style="flex:1;"><div style="font-size:.82rem;font-weight:600;color:var(--text-primary);">Resultado: Crítico</div><div style="font-size:.7rem;color:var(--text-muted);">${quiz.resultados?.critico?.titulo?.substring(0,50)||''}...</div></div>
+        </div>
+        <div class="etapa-row" style="background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.15);">
+          <div style="width:24px;height:24px;border-radius:6px;background:rgba(217,119,6,.15);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#d97706;">⚡</div>
+          <div style="flex:1;"><div style="font-size:.82rem;font-weight:600;color:var(--text-primary);">Resultado: Ruim</div><div style="font-size:.7rem;color:var(--text-muted);">${quiz.resultados?.ruim?.titulo?.substring(0,50)||''}...</div></div>
+        </div>
+        <div class="etapa-row" style="background:rgba(22,101,52,.06);border:1px solid rgba(22,101,52,.15);">
+          <div style="width:24px;height:24px;border-radius:6px;background:rgba(22,101,52,.15);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#166534;">✦</div>
+          <div style="flex:1;"><div style="font-size:.82rem;font-weight:600;color:var(--text-primary);">Resultado: Estável</div><div style="font-size:.7rem;color:var(--text-muted);">${quiz.resultados?.estavel?.titulo?.substring(0,50)||''}...</div></div>
+        </div>
       </div>
     </div>
   `;
 
   renderStep(0);
-  renderDots();
 }
 
 function renderStep(i) {
-  const design = generatedQuiz.design || {};
-  const etapas = generatedQuiz.etapas || [];
-  const step = etapas[i];
-  if (!step) return;
+  if (!generatedQuiz) return;
+  const d = generatedQuiz.design || {};
+  const perguntas = generatedQuiz.perguntas || [];
+  const p = perguntas[i];
+  if (!p) return;
+  previewStep = i;
 
-  previewStepIndex = i;
+  const primary   = d.cor_primaria   || '#6366F1';
+  const secondary = d.cor_secundaria || '#8B5CF6';
+  const bg        = d.cor_fundo      || '#fff';
+  const text      = d.cor_texto      || '#1f2937';
+  const btnTxt    = d.cor_botao_texto|| '#fff';
+  const r         = d.borda_radius   || '12px';
 
-  const primary = design.cor_primaria || '#6366F1';
-  const secondary = design.cor_secundaria || '#8B5CF6';
-  const bg = design.cor_fundo || '#ffffff';
-  const text = design.cor_texto || '#1F2937';
-  const btnText = design.cor_botao_texto || '#ffffff';
-  const radius = design.borda_radius || '12px';
+  let html = `<div style="font-size:.95rem;font-weight:700;margin-bottom:14px;line-height:1.4;">${p.texto}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">`;
 
-  const container = document.getElementById('quiz-step-preview');
-  if (!container) return;
-
-  let html = `<div style="font-family:'${design.fonte||'Inter'}',sans-serif;background:${bg};color:${text};">`;
-
-  if (step.titulo) html += `<div style="font-size:1.2rem;font-weight:700;margin-bottom:6px;line-height:1.3;">${step.titulo}</div>`;
-  if (step.descricao) html += `<div style="font-size:0.85rem;opacity:0.6;margin-bottom:20px;">${step.descricao}</div>`;
-
-  const perguntas = step.perguntas || [];
-
-  perguntas.forEach(p => {
-    if (p.tipo === 'multipla_escolha') {
-      html += `<div style="font-size:0.95rem;font-weight:600;margin-bottom:14px;">${p.texto}</div>`;
-      html += `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">`;
-      (p.opcoes||[]).forEach(op => {
-        html += `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:2px solid rgba(0,0,0,0.1);border-radius:${radius};font-size:0.875rem;font-weight:500;cursor:pointer;transition:all 0.2s;"
-          onmouseover="this.style.borderColor='${primary}';this.style.background='${primary}15'"
-          onmouseout="this.style.borderColor='rgba(0,0,0,0.1)';this.style.background='transparent'">
-          ${op.icone?`<span style="font-size:1.2rem;">${op.icone}</span>`:''}
-          <span>${op.texto}</span>
-        </div>`;
-      });
-      html += `</div>`;
-    } else if (p.tipo === 'captura_nome') {
-      html += `<div style="margin-bottom:12px;"><div style="font-size:0.78rem;font-weight:600;opacity:0.7;margin-bottom:6px;">${p.texto||'Seu nome'}</div><input disabled placeholder="${p.placeholder||'Digite seu nome'}" style="width:100%;padding:11px 14px;border:2px solid rgba(0,0,0,0.1);border-radius:${radius};font-size:0.875rem;background:transparent;color:${text};"></div>`;
-    } else if (p.tipo === 'captura_email') {
-      html += `<div style="margin-bottom:12px;"><div style="font-size:0.78rem;font-weight:600;opacity:0.7;margin-bottom:6px;">${p.texto||'Seu email'}</div><input disabled placeholder="${p.placeholder||'seu@email.com'}" style="width:100%;padding:11px 14px;border:2px solid rgba(0,0,0,0.1);border-radius:${radius};font-size:0.875rem;background:transparent;color:${text};"></div>`;
-    } else if (p.tipo === 'captura_whatsapp') {
-      html += `<div style="margin-bottom:12px;"><div style="font-size:0.78rem;font-weight:600;opacity:0.7;margin-bottom:6px;">${p.texto||'WhatsApp'}</div><input disabled placeholder="${p.placeholder||'(11) 99999-9999'}" style="width:100%;padding:11px 14px;border:2px solid rgba(0,0,0,0.1);border-radius:${radius};font-size:0.875rem;background:transparent;color:${text};"></div>`;
-    }
+  (p.opcoes||[]).forEach(op => {
+    html += `<div style="display:flex;align-items:center;gap:12px;padding:12px 15px;border:2px solid rgba(0,0,0,.1);border-radius:${r};font-size:.875rem;font-weight:500;cursor:pointer;"
+      onmouseover="this.style.borderColor='${primary}';this.style.background='${primary}18'"
+      onmouseout="this.style.borderColor='rgba(0,0,0,.1)';this.style.background='transparent'">
+      ${op.icone?`<span style="font-size:1.25rem;">${op.icone}</span>`:''}
+      <span>${op.texto}</span>
+    </div>`;
   });
+  html += `</div>`;
 
-  // Botão
-  if (step.tipo !== 'pergunta' || !perguntas.some(p => p.tipo === 'multipla_escolha')) {
-    html += `<button style="width:100%;padding:13px;background:linear-gradient(135deg,${primary},${secondary});color:${btnText};border:none;border-radius:${radius};font-size:0.9rem;font-weight:700;cursor:pointer;margin-top:8px;">
-      ${step.tipo === 'captura' ? 'Quero meu resultado →' : 'Continuar →'}
-    </button>`;
+  if (p.quote_expert?.texto) {
+    html += `<div style="background:${primary};border-radius:${r};padding:14px;margin-top:16px;font-size:.8rem;color:rgba(255,255,255,.9);font-style:italic;line-height:1.6;">
+      "${p.quote_expert.texto}"<div style="font-size:.72rem;color:rgba(255,255,255,.6);margin-top:6px;">${p.quote_expert.autor||''}</div>
+    </div>`;
   }
 
-  html += '</div>';
-  container.innerHTML = html;
+  const container = document.getElementById('quiz-step-preview');
+  if (container) container.innerHTML = html;
 
-  // Atualiza progresso
-  const total = (generatedQuiz.etapas||[]).length;
+  const total = perguntas.length;
   const prog = document.getElementById('preview-prog');
   if (prog) prog.style.width = Math.round((i+1)/total*100) + '%';
-
   const counter = document.getElementById('step-counter');
-  if (counter) counter.textContent = `Etapa ${i+1} / ${total}`;
+  if (counter) counter.textContent = (i+1) + ' / ' + total;
 
-  renderDots();
-}
-
-function renderDots() {
-  const total = (generatedQuiz?.etapas||[]).length;
-  const nav = document.getElementById('step-nav-dots');
-  if (!nav) return;
-  nav.innerHTML = Array.from({length: total}, (_,i) =>
-    `<button class="step-dot-nav ${i===previewStepIndex?'active':''}" onclick="jumpToStep(${i})"></button>`
+  const nav = document.getElementById('step-nav');
+  if (nav) nav.innerHTML = Array.from({length:total},(_,j)=>
+    `<button class="sdot ${j===i?'active':''}" onclick="jumpTo(${j})"></button>`
   ).join('');
 }
 
-function jumpToStep(i) { renderStep(i); }
-function nextStep() {
-  const total = (generatedQuiz?.etapas||[]).length;
-  if (previewStepIndex < total - 1) renderStep(previewStepIndex + 1);
+function jumpTo(i) {
+  if (i < 0) return; // welcome
+  renderStep(i);
 }
-function prevStep() {
-  if (previewStepIndex > 0) renderStep(previewStepIndex - 1);
-}
+function nextStep() { const t=(generatedQuiz?.perguntas||[]).length; if(previewStep<t-1) renderStep(previewStep+1); }
+function prevStep() { if(previewStep>0) renderStep(previewStep-1); }
 
 async function saveQuiz() {
   if (!generatedQuiz) return;
   const btn = document.getElementById('btn-save-quiz');
   setLoading(btn, true, 'Salvando...');
+  const d = generatedQuiz.design || {};
+
+  // Etapas simples para compatibilidade com o editor
+  const etapasSimples = (generatedQuiz.perguntas || []).map((p, i) => ({
+    id: 'e' + i, tipo: 'pergunta', titulo: '', descricao: '', config: {},
+    perguntas: [{ id: p.id || 'p'+i, tipo: 'multipla_escolha',
+      texto: p.texto, opcoes: p.opcoes||[], obrigatoria: true }]
+  }));
+
+  const payload = {
+    nome:      generatedQuiz.nome || generatedQuiz.titulo_boas_vindas || 'Quiz IA',
+    titulo:    generatedQuiz.titulo_boas_vindas || '',
+    subtitulo: generatedQuiz.subtitulo_boas_vindas || '',
+    premium_data: JSON.stringify(generatedQuiz),
+    config: JSON.stringify({
+      cores: {
+        primaria:   d.cor_primaria    || '#1a3d2e',
+        secundaria: d.cor_secundaria  || '#2a5c44',
+        fundo:      d.cor_fundo       || '#faf8f4',
+        texto:      d.cor_texto       || '#1a1a1a',
+        botao_texto:d.cor_botao_texto || '#ffffff'
+      },
+      fonte: d.fonte_titulo || d.fonte || 'Playfair Display',
+      borda_radius: d.borda_radius || '12px',
+      mostrar_progresso: true,
+      animacoes: true,
+      premium_data: JSON.stringify(generatedQuiz)
+    }),
+    pixels: JSON.stringify({}),
+    etapas: JSON.stringify(etapasSimples)
+  };
 
   try {
-    const design = generatedQuiz.design || {};
-
-    // Etapas simples para compatibilidade
-    const etapasSimples = (generatedQuiz.perguntas || []).map((p, i) => ({
-      id: 'e' + i, tipo: 'pergunta', titulo: '', descricao: '', config: {},
-      perguntas: [{ id: p.id || 'p' + i, tipo: 'multipla_escolha',
-        texto: p.texto, opcoes: p.opcoes || [], obrigatoria: true }]
-    }));
-
-    const payload = {
-      nome: generatedQuiz.nome || generatedQuiz.titulo_boas_vindas || 'Quiz IA',
-      titulo: generatedQuiz.titulo_boas_vindas || '',
-      subtitulo: generatedQuiz.subtitulo_boas_vindas || '',
-      premium_data: JSON.stringify(generatedQuiz),
-      config: JSON.stringify({
-        cores: {
-          primaria: design.cor_primaria || '#1a3d2e',
-          secundaria: design.cor_secundaria || '#2a5c44',
-          fundo: design.cor_fundo || '#faf8f4',
-          texto: design.cor_texto || '#1a1a1a',
-          botao_texto: design.cor_botao_texto || '#ffffff'
-        },
-        fonte: design.fonte_titulo || design.fonte || 'Playfair Display',
-        borda_radius: design.borda_radius || '12px',
-        mostrar_progresso: true, animacoes: true,
-        premium_data: JSON.stringify(generatedQuiz)
-      }),
-      pixels: JSON.stringify({}),
-      etapas: JSON.stringify(etapasSimples)
-    };
-
     const res = await API.createQuiz(payload);
-
     if (res?.success) {
       Toast.success('Quiz salvo!');
-      setTimeout(() => {
-        window.location.href = 'editor.html?id=' + res.data.id;
-      }, 800);
+      setTimeout(() => window.location.href = 'editor.html?id=' + res.data.id, 700);
     } else {
       Toast.error(res?.message || 'Erro ao salvar');
+      setLoading(btn, false);
     }
   } catch(e) {
     Toast.error('Erro: ' + e.message);
-  } finally {
     setLoading(btn, false);
   }
 }
