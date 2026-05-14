@@ -576,7 +576,7 @@ async function saveQuiz() {
     }
 
     Toast.success('Quiz salvo!');
-    setTimeout(() => window.location.href = 'editor.html?id=' + quizId, 700);
+    setTimeout(() => window.location.href = 'quiz-ia-config.html?id=' + quizId, 700);
 
   } catch(e) {
     console.error('[QuizFlow] Exceção em saveQuiz:', e);
