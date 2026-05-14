@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizFlow — Configurar Quiz IA</title>
+  <link rel="stylesheet" href="global.css">
+  <style>
+    .config-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+    .foto-url-group { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+    .foto-url-group label { font-size:.78rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; }
+    .code-area { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; font-family:monospace; font-size:.75rem; color:var(--text-secondary); white-space:pre-wrap; word-break:break-all; max-height:400px; overflow-y:auto; }
+    .copy-btn { margin-top:8px; }
+    .preview-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; background:var(--amber-glow); border:1px solid var(--amber); border-radius:100px; font-size:.72rem; font-weight:700; color:var(--amber); }
+    @media(max-width:900px){ .config-layout{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="logo-mark"><div class="logo-icon">⚡</div>QuizFlow</div></div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a>
+      <a href="quizzes.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Meus Quizzes</a>
+      <a href="leads.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Leads</a>
+      <a href="analytics.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+      <div class="nav-section-label">Ferramentas</div>
+      <a href="quiz-generator.html" class="nav-link active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Agente IA</a>
+      <div class="nav-section-label">Configurações</div>
+      <a href="settings.html" class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user"><div class="user-avatar" id="user-avatar-initials">U</div><div class="user-info"><div class="user-name" id="sidebar-user-name">—</div><div class="user-email" id="sidebar-user-email">—</div></div></div>
+      <button class="nav-link btn-ghost" id="btn-logout" style="width:100%;margin-top:4px;color:var(--red);">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sair
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="sidebar-toggle" id="sidebar-toggle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+        <a href="quizzes.html" style="color:var(--text-muted);font-size:.82rem;">← Meus Quizzes</a>
+        <span style="color:var(--text-muted)">/</span>
+        <span class="page-title" id="page-title">Configurar Quiz IA</span>
+        <span id="status-badge" class="badge badge-muted">Rascunho</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="publishQuiz()" id="btn-publish">Publicar</button>
+        <button class="btn btn-primary btn-sm" onclick="generateCode()" id="btn-code">⚡ Gerar Código</button>
+      </div>
+    </header>
+
+    <div class="page-body">
+      <div id="loading-state" style="text-align:center;padding:60px;color:var(--text-muted);">Carregando quiz...</div>
+      <div id="main-content" style="display:none;">
+
+        <div class="config-layout">
+          <!-- Coluna esquerda: configurações -->
+          <div>
+            <div class="card" style="margin-bottom:20px;">
+              <div class="card-header"><span class="card-title">Informações do Quiz</span></div>
+              <div class="form-group">
+                <label class="form-label">Nome do Quiz</label>
+                <input type="text" class="form-input" id="quiz-nome" placeholder="Nome interno">
+              </div>
+              <div class="form-group">
+                <label class="form-label">URL do WhatsApp / CTA</label>
+                <input type="url" class="form-input" id="quiz-cta" placeholder="https://wa.me/55119...">
+                <div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Link que abre ao clicar no botão do resultado</div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-bottom:20px;">
+              <div class="card-header"><span class="card-title">Fotos da Expert</span><span class="badge badge-muted">URLs</span></div>
+              <div id="fotos-expert-container">
+                <div class="foto-url-group"><label>Foto 1 (tela inicial + resultado)</label><input type="url" class="form-input foto-expert" placeholder="https://..."></div>
+                <div class="foto-url-group"><label>Foto 2 (quotes das perguntas)</label><input type="url" class="form-input foto-expert" placeholder="https://..."></div>
+                <div class="foto-url-group"><label>Foto 3 (assinatura no resultado)</label><input type="url" class="form-input foto-expert" placeholder="https://..."></div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="addFotoExpert()">+ Adicionar foto</button>
+            </div>
+
+            <div class="card" style="margin-bottom:20px;">
+              <div class="card-header"><span class="card-title">Fotos de Prova Social</span><span class="badge badge-muted">URLs</span></div>
+              <div id="fotos-ps-container">
+                <div class="foto-url-group"><label>Foto 1 (depoimento 1)</label><input type="url" class="form-input foto-ps" placeholder="https://..."></div>
+                <div class="foto-url-group"><label>Foto 2 (depoimento 2)</label><input type="url" class="form-input foto-ps" placeholder="https://..."></div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="addFotoPS()">+ Adicionar foto</button>
+            </div>
+
+            <button class="btn btn-secondary" style="width:100%;" onclick="saveConfig()" id="btn-save">💾 Salvar Configurações</button>
+          </div>
+
+          <!-- Coluna direita: código gerado -->
+          <div>
+            <div class="card" style="margin-bottom:20px;">
+              <div class="card-header"><span class="card-title">Código para Elementor</span></div>
+              <div id="code-placeholder" style="text-align:center;padding:40px;color:var(--text-muted);">
+                <div style="font-size:2rem;margin-bottom:12px;">📋</div>
+                <p>Clique em <strong>⚡ Gerar Código</strong> para gerar o HTML completo pronto para colar no Elementor.</p>
+              </div>
+              <div id="code-area" style="display:none;">
+                <textarea class="code-area" id="generated-code" readonly style="width:100%;height:300px;resize:vertical;"></textarea>
+                <button class="btn btn-primary copy-btn" onclick="copyCode()">📋 Copiar Código</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><span class="card-title">Resumo do Quiz IA</span><span class="preview-badge">✦ Premium</span></div>
+              <div id="quiz-summary" style="font-size:.875rem;color:var(--text-secondary);line-height:1.8;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="utils.js"></script>
+<script>
+if (!Auth.requireAuth()) throw '';
+initSidebar();
+
+const params = new URLSearchParams(window.location.search);
+const QUIZ_ID = params.get('id');
+if (!QUIZ_ID) { window.location.href = 'quizzes.html'; throw ''; }
+
+let quiz = null;
+let premiumData = null;
+
+async function loadQuiz() {
+  try {
+    const res = await API.getQuiz(QUIZ_ID);
+    if (!res?.success) { Toast.error('Quiz não encontrado'); window.location.href = 'quizzes.html'; return; }
+
+    quiz = res.data;
+    const config = quiz.config || {};
+    premiumData = config.premium_data ? JSON.parse(config.premium_data) : null;
+
+    if (!premiumData) {
+      Toast.error('Este quiz não tem dados de IA. Use o Agente IA para gerar um quiz.');
+      window.location.href = 'quizzes.html';
+      return;
+    }
+
+    // Preenche campos
+    document.getElementById('quiz-nome').value = quiz.nome || '';
+    document.getElementById('quiz-cta').value = premiumData.url_cta || '';
+    document.getElementById('page-title').textContent = quiz.nome || 'Quiz IA';
+    document.getElementById('status-badge').textContent = quiz.status === 'published' ? 'Publicado' : 'Rascunho';
+    document.getElementById('status-badge').className = 'badge ' + (quiz.status === 'published' ? 'badge-success' : 'badge-muted');
+
+    // Fotos expert
+    const fotosExpert = premiumData.fotos_expert || [];
+    const feContainer = document.getElementById('fotos-expert-container');
+    feContainer.querySelectorAll('.foto-expert').forEach((inp, i) => {
+      inp.value = fotosExpert[i] || '';
+    });
+
+    // Fotos prova social
+    const fotosPS = premiumData.fotos_prova_social || [];
+    const psContainer = document.getElementById('fotos-ps-container');
+    psContainer.querySelectorAll('.foto-ps').forEach((inp, i) => {
+      inp.value = fotosPS[i] || '';
+    });
+
+    // Resumo
+    const pergs = premiumData.perguntas || [];
+    const res2 = premiumData.resultados || {};
+    document.getElementById('quiz-summary').innerHTML = `
+      <div><strong>Título:</strong> ${premiumData.titulo_boas_vindas || ''}</div>
+      <div><strong>Perguntas:</strong> ${pergs.length}</div>
+      <div><strong>Resultados:</strong> Crítico / Ruim / Estável</div>
+      <div><strong>Design:</strong> ${(premiumData.design || {}).estilo_nome || 'Personalizado'}</div>
+      <div><strong>Expert:</strong> ${(premiumData.expert || {}).nome || '—'}</div>
+      <div><strong>Faixas:</strong> ${JSON.stringify((res2.faixas || {}))}</div>
+    `;
+
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+
+  } catch(e) {
+    Toast.error('Erro ao carregar quiz: ' + e.message);
+  }
+}
+
+function getFotosExpert() {
+  return Array.from(document.querySelectorAll('.foto-expert')).map(i => i.value.trim()).filter(Boolean);
+}
+function getFotosPS() {
+  return Array.from(document.querySelectorAll('.foto-ps')).map(i => i.value.trim()).filter(Boolean);
+}
+
+function addFotoExpert() {
+  const c = document.getElementById('fotos-expert-container');
+  const n = c.querySelectorAll('.foto-url-group').length + 1;
+  c.insertAdjacentHTML('beforeend', `<div class="foto-url-group"><label>Foto ${n}</label><input type="url" class="form-input foto-expert" placeholder="https://..."></div>`);
+}
+function addFotoPS() {
+  const c = document.getElementById('fotos-ps-container');
+  const n = c.querySelectorAll('.foto-url-group').length + 1;
+  c.insertAdjacentHTML('beforeend', `<div class="foto-url-group"><label>Foto ${n}</label><input type="url" class="form-input foto-ps" placeholder="https://..."></div>`);
+}
+
+async function saveConfig() {
+  const btn = document.getElementById('btn-save');
+  setLoading(btn, true, 'Salvando...');
+
+  // Atualiza premiumData com valores dos campos
+  premiumData.url_cta = document.getElementById('quiz-cta').value.trim();
+  premiumData.fotos_expert = getFotosExpert();
+  premiumData.fotos_prova_social = getFotosPS();
+
+  const nome = document.getElementById('quiz-nome').value.trim() || quiz.nome;
+
+  try {
+    // 1. Atualiza nome (sem enviar config completa)
+    const res = await API.call({ action: 'update_quiz', quiz_id: QUIZ_ID, nome });
+    if (!res?.success) { Toast.error(res?.message || 'Erro ao salvar nome'); setLoading(btn, false); return; }
+
+    // 2. Envia premium_data atualizado em chunks
+    const premiumStr = JSON.stringify(premiumData);
+    const CHUNK_SIZE = 1500;
+    const BASE = API.getBaseUrl();
+    const token = localStorage.getItem('qf_token') || '';
+
+    for (let i = 0; i < premiumStr.length; i += CHUNK_SIZE) {
+      const chunk = premiumStr.slice(i, i + CHUNK_SIZE);
+      const isLast = (i + CHUNK_SIZE) >= premiumStr.length;
+      const url = new URL(BASE);
+      url.searchParams.set('action', 'save_premium_chunk');
+      url.searchParams.set('token', token);
+      url.searchParams.set('quiz_id', QUIZ_ID);
+      url.searchParams.set('chunk', chunk);
+      url.searchParams.set('index', String(Math.floor(i / CHUNK_SIZE)));
+      url.searchParams.set('is_last', isLast ? '1' : '0');
+      await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
+    }
+
+    Toast.success('Configurações salvas!');
+    quiz.nome = nome;
+  } catch(e) {
+    Toast.error('Erro: ' + e.message);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function publishQuiz() {
+  const btn = document.getElementById('btn-publish');
+  setLoading(btn, true, 'Publicando...');
+  try {
+    // Publica sem enviar config — só muda o status
+    const res = await API.call({ action: 'update_quiz', quiz_id: QUIZ_ID, status: 'published' });
+    if (res?.success) {
+      quiz.status = 'published';
+      document.getElementById('status-badge').textContent = 'Publicado';
+      document.getElementById('status-badge').className = 'badge badge-success';
+      Toast.success('Quiz publicado! Gere o código e cole no Elementor.');
+    } else {
+      Toast.error(res?.message || 'Erro ao publicar');
+    }
+  } catch(e) {
+    Toast.error('Erro: ' + e.message);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function generateCode() {
+  const btn = document.getElementById('btn-code');
+  setLoading(btn, true, 'Gerando...');
+  try {
+    const res = await API.generateCode(QUIZ_ID);
+    if (res?.success) {
+      document.getElementById('code-placeholder').style.display = 'none';
+      document.getElementById('code-area').style.display = 'block';
+      document.getElementById('generated-code').value = res.data.full;
+      Toast.success('Código gerado!');
+    } else {
+      Toast.error(res?.message || 'Erro ao gerar código');
+    }
+  } catch(e) {
+    Toast.error('Erro: ' + e.message);
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function copyCode() {
+  const el = document.getElementById('generated-code');
+  el.select();
+  document.execCommand('copy');
+  Toast.success('Código copiado!');
+}
+
+loadQuiz();
+</script>
+</body>
+</html>
