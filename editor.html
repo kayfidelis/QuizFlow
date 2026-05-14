@@ -635,6 +635,13 @@ async function loadQuiz() {
     if (!res?.success) { Toast.error('Quiz não encontrado'); window.location.href = 'quizzes.html'; return; }
     quiz = res.data;
     etapas = quiz.etapas || [];
+
+    // Se é quiz premium (gerado por IA), redireciona para a página correta
+    const cfg = quiz.config || {};
+    if (cfg.premium_data) {
+      window.location.replace('quiz-ia-config.html?id=' + QUIZ_ID);
+      return;
+    }
     renderAll();
 
     // Abre aba de código se veio por parâmetro
@@ -1164,9 +1171,7 @@ async function saveQuiz() {
 async function publishQuiz() {
   if (!quiz) { Toast.error('Quiz não carregado ainda'); return; }
 
-  // Salva primeiro
-  await saveQuiz();
-
+  // Para publicar: só muda o status, sem reenviar config
   try {
     const res = await API.updateQuiz(QUIZ_ID, { status: 'published' });
     if (res?.success) {
