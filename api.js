@@ -1,6 +1,6 @@
 // api.js — GET only, com createQuiz dividido em 2 chamadas
 const API = (() => {
-  const BASE_URL = 'https://script.google.com/macros/s/AKfycbxVONM2rNPWjSrJJ0d4RDTmUaJh53k-2IrOG-tromEY6e02GtQdrQ-km1QD51UjTorfhw/exec';
+  const BASE_URL = 'https://script.google.com/macros/s/AKfycbwFdpW2io4KBwXVSq6GZH7Y6FKk9nzx7sC0JWAhzHa3iKP68VumKb1RE_wjq_ndQE6N4w/exec';
 
   function getToken() { return localStorage.getItem('qf_token') || ''; }
 
