@@ -75,6 +75,8 @@ const API = (() => {
   }
 
   return {
+    getBaseUrl: () => BASE_URL,
+    call: (params) => call(params),
     login:              (email, password)       => call({ action:'login', email, password }),
     register:           (email, password, nome) => call({ action:'register', email, password, nome }),
     logout:             ()                      => call({ action:'logout' }),
