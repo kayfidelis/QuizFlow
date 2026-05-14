@@ -304,16 +304,16 @@ async function startAgent() {
   startTimer();
 
   // Troca para step 2 após 25s
-  const t1 = setTimeout(() => { setStep(1, 'done'); setStep(2, 'active'); }, 25000);
+  const t1 = setTimeout(() => { setStep(1, 'done'); setStep(2, 'active'); }, 40000);
 
   // Timeout de segurança 3 min
   const tTimeout = setTimeout(() => {
-    clearTimeout(t1);
-    stopTimer();
-    document.getElementById('agent-overlay').style.display = 'none';
-    document.getElementById('btn-generate').disabled = false;
-    Toast.error('Tempo limite atingido. Tente novamente com uma proposta mais curta.');
-  }, 180000);
+      clearTimeout(t1);
+      stopTimer();
+      document.getElementById('agent-overlay').style.display = 'none';
+      document.getElementById('btn-generate').disabled = false;
+      Toast.error('Tempo limite atingido. Tente com uma proposta mais curta ou tente novamente.');
+    }, 120000);
 
   try {
     const BASE = 'https://script.google.com/macros/s/AKfycbxVONM2rNPWjSrJJ0d4RDTmUaJh53k-2IrOG-tromEY6e02GtQdrQ-km1QD51UjTorfhw/exec';
@@ -333,10 +333,11 @@ async function startAgent() {
     clearTimeout(tTimeout);
     stopTimer();
 
-    if (!res?.success) {
+    if (!res || !res.success) {
       document.getElementById('agent-overlay').style.display = 'none';
       document.getElementById('btn-generate').disabled = false;
-      Toast.error(res?.message || 'Erro ao gerar. Tente novamente.');
+      const errMsg = (res && res.message) ? res.message : 'Erro ao gerar. Verifique se a chave ANTHROPIC_API_KEY está configurada e tente novamente.';
+      Toast.error(errMsg);
       return;
     }
 
@@ -539,7 +540,7 @@ async function saveQuiz() {
   try {
     // Etapa 1: Cria o quiz básico
     const res = await API.createQuiz(payload);
-    if (!res?.success) {
+    if (!res || !res.success) {
       Toast.error(res?.message || 'Erro ao salvar');
       setLoading(btn, false);
       return;
