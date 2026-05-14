@@ -538,15 +538,22 @@ async function saveQuiz() {
   };
 
   try {
+    console.log('[QuizFlow] Iniciando saveQuiz, payload:', JSON.stringify(payload).substring(0,200));
+
     // Etapa 1: Cria o quiz básico
     const res = await API.createQuiz(payload);
+    console.log('[QuizFlow] Resposta createQuiz:', res);
+
     if (!res || !res.success) {
-      Toast.error(res?.message || 'Erro ao salvar');
+      const errMsg = (res && res.message) ? res.message : 'Sem resposta do servidor. Verifique se está logado.';
+      Toast.error('Erro ao salvar: ' + errMsg);
+      console.error('[QuizFlow] Erro createQuiz:', errMsg, res);
       setLoading(btn, false);
       return;
     }
 
     const quizId = res.data.id;
+    console.log('[QuizFlow] Quiz criado com ID:', quizId);
 
     // Etapa 2: Envia premium_data em chunks de 1500 chars
     setLoading(btn, true, 'Salvando dados IA...');
@@ -572,7 +579,8 @@ async function saveQuiz() {
     setTimeout(() => window.location.href = 'editor.html?id=' + quizId, 700);
 
   } catch(e) {
-    Toast.error('Erro: ' + e.message);
+    console.error('[QuizFlow] Exceção em saveQuiz:', e);
+    Toast.error('Erro ao salvar: ' + e.message + '. Verifique o console (F12) para detalhes.');
     setLoading(btn, false);
   }
 }
