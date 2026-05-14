@@ -479,7 +479,13 @@
       const res = await API.duplicateQuiz(id);
       if (res?.success) {
         Toast.success('Quiz duplicado!');
-        loadQuizzes();
+        function openQuiz(q) {
+  // Quizzes com flag is_premium vão para configuração IA
+  // Por ora, todos vão para editor (que detecta e redireciona se for premium)
+  window.location.href = 'editor.html?id=' + q.id;
+}
+
+loadQuizzes();
       } else {
         Toast.error(res?.message || 'Erro ao duplicar');
       }
@@ -499,7 +505,13 @@
       const res = await API.deleteQuiz(id);
       if (res?.success) {
         Toast.success('Quiz excluído');
-        loadQuizzes();
+        function openQuiz(q) {
+  // Quizzes com flag is_premium vão para configuração IA
+  // Por ora, todos vão para editor (que detecta e redireciona se for premium)
+  window.location.href = 'editor.html?id=' + q.id;
+}
+
+loadQuizzes();
       } else {
         Toast.error(res?.message || 'Erro ao excluir');
       }
@@ -590,7 +602,13 @@
     return d + 'd atrás';
   }
 
-  loadQuizzes();
+  function openQuiz(q) {
+  // Quizzes com flag is_premium vão para configuração IA
+  // Por ora, todos vão para editor (que detecta e redireciona se for premium)
+  window.location.href = 'editor.html?id=' + q.id;
+}
+
+loadQuizzes();
 </script>
 </body>
 </html>
